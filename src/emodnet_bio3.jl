@@ -122,10 +122,9 @@ else
     srand(1234)
 end
 
-datadir = expanduser("~/tmp/Emodnet-Bio")
+datadir = get(ENV,"DATADIR",expanduser("~/tmp/Emodnet-Bio"))
 
-bathname = expanduser("~/Data/DivaData/Global/gebco_30sec_16.nc");
-bathname = expanduser("~/Data/DivaData/Global/gebco_30sec_4.nc");
+bathname = joinpath(datadir,"gebco_30sec_4.nc");
 
 
 bathisglobal = true;

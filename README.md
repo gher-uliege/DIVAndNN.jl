@@ -8,6 +8,8 @@ git clone git@gitlab.com:gher-ulg/DIVAndNN.git
 cd DIVAndNN/
 ```
 
+See `REQUIRE` for necessary packages.
+
 Run in `DIVAndNN/src`
 
 ```julia

@@ -1,0 +1,7 @@
+julia 0.6
+Knet
+DIVAnd
+Interpolations
+MAT
+NCDatasets
+PyPlot

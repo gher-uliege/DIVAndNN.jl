@@ -15,3 +15,5 @@ include("emodnet_bio3.jl")
 ```
 
 Data is assumed to be in the directory defined in the environement variable `DATADIR` (`$HOME/tmp/Emodnet-Bio` if this variable is not defined)
+
+A copy of the example data is in `nic4:/home/ulg/gher/abarth/tmp/Emodnet-Bio`

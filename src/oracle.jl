@@ -86,7 +86,7 @@ julia> lond, latd, temp = subset_oracle(lonr, latr, field., [-5, 30., 35., 50.])
 ```
 """
 function subset_oracle(lonr::Array{Float64,1}, latr::Array{Float64,1},
-        field::Array{Float64,2}, domain::typeof(coords))
+        field::Array{Float64,2}, domain::Array{Float64,1})
 
     goodlon = findall((lonr .>= domain[1]) .& (lonr .<= domain[2]));
     goodlat = findall((latr .>= domain[3]) .& (latr .<= domain[4]));

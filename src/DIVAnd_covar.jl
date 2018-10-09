@@ -234,19 +234,20 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
     weight_bias_test = weightbias(NLayers)
     #weight_bias_test = weightbias(NLayers, (sz...) -> randn(sz...)/100)
 
-    #field_test = DIVAnd.random(mask,pmn,len,1)[:,:,:,1][mask][:,1:1]
-    field_test = zeros(sv.n,1)
+    field_test = DIVAnd.random(mask,pmn,len,1)[:,:,:,1][mask][:,1:1]
+    #field_test = zeros(sv.n,1)
 
     fw0 = deepcopy([weight_bias_test..., field_test])
 
     # @show size(fw0[end])
     # @show loss(iB,fieldp,H,y,fw0,costfun,epsilon2,dropoutprob,L2reg)
 
-    #optim = Knet.optimizers(fw0, Knet.Adam; lr = learning_rate)
-    optim = Knet.optimizers(fw0, Knet.Sgd; lr = learning_rate)
+    optim = Knet.optimizers(fw0, Knet.Adam; lr = learning_rate)
+    #optim = Knet.optimizers(fw0, Knet.Sgd; lr = learning_rate)
     t0 = now()
 
     fi,s2 = DIVAnd.DIVAndrun(mask,pmn,xyi,obspos,y,len,epsilon2; alphabc = 0)
+    #=
     # @show sum(s2.obsout)
     x = fw0[end]
     gradloss = grad_loss(iB,fieldp,H,y,fw0,costfun,epsilon2,dropoutprob,L2reg)
@@ -254,8 +255,10 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
     @show gradloss[end][1:10]
     @show gradloss2[1:10]
     @show maximum(abs.(gradloss2 - gradloss[end]))
+=#
     # @show gradloss[1:end-1]
 
+    #=
     fw0[end] = fi[mask][:,1:1]
     x = fw0[end]
     gradloss = grad_loss(iB,fieldp,H,y,fw0,costfun,epsilon2,dropoutprob,L2reg)
@@ -273,6 +276,8 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
     @show size.(fw0)
 
     fw0 = deepcopy([weight_bias_test..., fi[mask][:,1:1]])
+
+    =#
     @show size.(fw0)
 
     for i = 1:niter
@@ -296,21 +301,25 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
 
         #gradloss = grad_loss(iB,fieldp,H,y,fw0,costfun,epsilon2,dropoutprob,L2reg)
         gradloss = grad_loss(iB,fieldp,H[iobssel,:],y[iobssel],fw0,costfun,epsilon2,dropoutprob,L2reg)
+
+        #=
         @show gradloss[end][1:10]
         @show maximum(gradloss[end])
 
         x = fw0[end]
-        gradloss = [2* s2.H' * (s2.R \ (s2.H*x - y)) + 2 * s2.iB * x]
-        @show gradloss[end][1:10]
-        @show maximum(gradloss[end])
+        gradloss2 = [2* s2.H' * (s2.R \ (s2.H*x - y)) + 2 * s2.iB * x]
+        @show gradloss2[end][1:10]
+        @show maximum(gradloss2[end])
+        =#
 
-
-        lossi = loss(iB,fieldp,H,y,fw0,costfun,epsilon2,0,L2reg)
-        @show lossi
+        #lossi0 = loss(iB,fieldp,H,y,fw0,costfun,epsilon2,0,L2reg)
+        #@show lossi0
         update!(fw0, gradloss, optim)
-        lossi = loss(iB,fieldp,H,y,fw0,costfun,epsilon2,0,L2reg)
-        @show lossi
-        error("ll")
+        #lossi1 = loss(iB,fieldp,H,y,fw0,costfun,epsilon2,0,L2reg)
+        #@show lossi1
+        #@show lossi1 - lossi0
+        #@show lossi0,lossi1,lossi1 - lossi0
+        #error("ll")
         if (now() - t0) > Dates.Second(3)
             #@show i,loss(iB,fieldp,H,y,fw0,costfun,epsilon2,0,L2reg)
             t0 = now()

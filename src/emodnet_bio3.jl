@@ -165,7 +165,7 @@ scatter(lon[sel],lat[sel],10,value[sel]; cmap = "jet"); colorbar()
 
 
 
-trans,invtrans = DIVAnd.Anam.loglin(30, epsilon = 1);
+trans,invtrans = DIVAnd.Anam.loglin(Inf, epsilon = 1);
 #trans,invtrans = DIVAnd.Anam.notransform();
 
 if false

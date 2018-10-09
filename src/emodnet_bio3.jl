@@ -22,7 +22,8 @@ function mad(x)
 end
 
 function interpcv(xyi,value_analysis,xy)
-    value_analysis_cv = zeros(size(lon_cv))
+    ncv = length(xy[1])
+    value_analysis_cv = zeros(ncv)
 
     @static if VERSION >= v"0.7"
         # https://github.com/JuliaMath/Interpolations.jl/issues/248
@@ -41,7 +42,7 @@ function interpcv(xyi,value_analysis,xy)
     #save("tmp.jld2","xyi",xyi,"value_analysis",value_analysis,"xy",xy)
     xyi = zeros(length(xy))
 
-    for i = 1:length(lon_cv)
+    for i = 1:ncv
     	for j = 1:length(xy)
 	        xyi[j] = xy[j][i]
         end
@@ -109,7 +110,7 @@ function surfacemean(fname,varname)
     SS = nomissing(S);
     SS[ismissing.(S)] .= NaN;
     close(ds)
-    return lon,lat,mean(SS,3)[1:2:end,1:2:end,1]
+    return lon,lat,mean(SS,3)[1:step:end,1:step:end,1]
 end
 
 coast() = contourf(bx,by,b' .> 0, levels=[0,.5], cmap = "gray")
@@ -140,11 +141,14 @@ lon = Vector{Float64}(data[:,findfirst(header .== "decimalLongitude")])
 lat = Vector{Float64}(data[:,findfirst(header .== "decimalLatitude")])
 sname = "Acartia bifilosa"
 
-
+for sname in header[6:end-1]
+    @show sname
+ 
 value = Vector{Float64}(data[:,findfirst(header .== sname)])
 obstime = DateTime.(data[:,findfirst(header .== "date")])
 time = Float64.(Dates.year.(obstime))
 
+    @show value[1:min(end,10)]
 
 #year = 2007;
 #year = 2010;
@@ -349,8 +353,8 @@ f = trans_value .- mvalue
 bestfactorl,bestfactore, cvval,cvvalues, x2Ddata,y2Ddata,cvinter,xi2D,yi2D =
     DIVAnd.DIVAnd_cv(mask[:,:,1],(pm[:,:,1],pn[:,:,1]),(xi[:,:,1],yi[:,:,1]),(lon[sel],lat[sel]),f,len,epsilon2,2,3,0);
 
-@warn "fix bestfactore"
-bestfactore = 0.2438612845535494
+#@warn "fix bestfactore"
+#bestfactore = 0.2438612845535494
 
 epsilon2 = epsilon2 * bestfactore
 
@@ -371,6 +375,7 @@ value_analysis2 = zeros(size(mask))
 lent = 0.6 # years
 niter = 10000
 niter = 100000
+#niter = 10
 
 #for l = 1:Ntries
     l=1
@@ -463,6 +468,14 @@ niter = 100000
 
 @show mean(RMS_diva), mean(RMS_diva_covar)
 @show 1 - mean(RMS_diva_covar)^2/mean(RMS_diva)^2
+
+
+outname = "analysis-$(sname).nc"
+
+DIVAnd.save(outname,(Tlon,Tlat,DateTime.(years,1,1)),value_analysis2,"abundance")
+
+
+end
 
 #=
 skill

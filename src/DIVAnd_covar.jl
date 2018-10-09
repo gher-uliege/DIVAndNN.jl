@@ -61,7 +61,7 @@ relu(x) = max(0.,x)
 function model_field(fieldp,fw, dropoutprob = 0.)
     w = fw[1:end-1]
     fieldb = fw[end]
-    
+
     if length(w) > 0
         field_test = fieldp
 
@@ -202,7 +202,8 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
                       niter::Int = 10000,
                       costfun = nll,
                       dropoutprob = 0.,
-                      L2reg = 0
+                      L2reg = 0,
+                      learning_rate = 0.01,
                       )
 
     sv = DIVAnd.statevector((mask,));
@@ -233,7 +234,7 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
     weight_bias_test = weightbias(NLayers)
     #weight_bias_test = weightbias(NLayers, (sz...) -> randn(sz...)/100)
 
-    #field_test = DIVAnd.random(mask,pmn,len,1)[:,:,1][mask][:,1:1]
+    #field_test = DIVAnd.random(mask,pmn,len,1)[:,:,:,1][mask][:,1:1]
     field_test = zeros(sv.n,1)
 
     fw0 = deepcopy([weight_bias_test..., field_test])
@@ -241,25 +242,27 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
     # @show size(fw0[end])
     # @show loss(iB,fieldp,H,y,fw0,costfun,epsilon2,dropoutprob,L2reg)
 
-    optim = Knet.optimizers(fw0, Knet.Adam; lr = 0.01)
+    #optim = Knet.optimizers(fw0, Knet.Adam; lr = learning_rate)
+    optim = Knet.optimizers(fw0, Knet.Sgd; lr = learning_rate)
     t0 = now()
 
-    # fi,s2 = DIVAnd.DIVAndrun(mask,pmn,xyi,obspos,y,len,epsilon2; alphabc = 0)
+    fi,s2 = DIVAnd.DIVAndrun(mask,pmn,xyi,obspos,y,len,epsilon2; alphabc = 0)
     # @show sum(s2.obsout)
-    # x = fw0[end]
-    # gradloss = grad_loss(iB,fieldp,H,y,fw0,costfun,epsilon2,dropoutprob,L2reg)
-    # gradloss2 = 2* s2.H' * (s2.R \ (s2.H*x - y)) + 2 * s2.iB * x
-    # @show maximum(abs.(gradloss2 - gradloss[end]))
+    x = fw0[end]
+    gradloss = grad_loss(iB,fieldp,H,y,fw0,costfun,epsilon2,dropoutprob,L2reg)
+    gradloss2 = 2* s2.H' * (s2.R \ (s2.H*x - y)) + 2 * s2.iB * x
+    @show gradloss[end][1:10]
+    @show gradloss2[1:10]
+    @show maximum(abs.(gradloss2 - gradloss[end]))
     # @show gradloss[1:end-1]
 
-    # fw0[end] = fi[mask][:,1:1]
-    # x = fw0[end]
-    # gradloss = grad_loss(iB,fieldp,H,y,fw0,costfun,epsilon2,dropoutprob,L2reg)
-    # gradloss2 = 2* s2.H' * (s2.R \ (s2.H*x - y)) + 2 * s2.iB * x
-    # @show gradloss2[1:10]
-    # @show gradloss[end][1:10]
-    # @show maximum(abs.(gradloss2 - gradloss[end]))
-    # @show gradloss[1:end-1]
+    fw0[end] = fi[mask][:,1:1]
+    x = fw0[end]
+    gradloss = grad_loss(iB,fieldp,H,y,fw0,costfun,epsilon2,dropoutprob,L2reg)
+    gradloss2 = 2* s2.H' * (s2.R \ (s2.H*x - y)) + 2 * s2.iB * x
+    @show gradloss[end][1:10]
+    @show gradloss2[1:10]
+    @show maximum(abs.(gradloss2 - gradloss[end]))
 
     # DIVAnd analysis as a first guess
     fi,s2 = DIVAnd.DIVAndrun(mask,pmn,xyi,obspos,y,len,epsilon2; alphabc = 0)
@@ -273,8 +276,8 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
     @show size.(fw0)
 
     for i = 1:niter
-        iobssel = rand(Float64,size(y)) .< 0.1
-        #iobssel = rand(Float64,size(y)) .< 1
+        #iobssel = rand(Float64,size(y)) .< 0.1
+        iobssel = rand(Float64,size(y)) .< 1
 
         if ((i-1) % plotevery == 0) && (plotevery != -1)
             prob_estim = model_field(fieldp,fw0,0)
@@ -293,10 +296,21 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
 
         #gradloss = grad_loss(iB,fieldp,H,y,fw0,costfun,epsilon2,dropoutprob,L2reg)
         gradloss = grad_loss(iB,fieldp,H[iobssel,:],y[iobssel],fw0,costfun,epsilon2,dropoutprob,L2reg)
-        #gradloss = [2* s2.H' * (s2.R \ (s2.H*x - y)) + 2 * s2.iB * x]
+        @show gradloss[end][1:10]
+        @show maximum(gradloss[end])
 
+        x = fw0[end]
+        gradloss = [2* s2.H' * (s2.R \ (s2.H*x - y)) + 2 * s2.iB * x]
+        @show gradloss[end][1:10]
+        @show maximum(gradloss[end])
+
+
+        lossi = loss(iB,fieldp,H,y,fw0,costfun,epsilon2,0,L2reg)
+        @show lossi
         update!(fw0, gradloss, optim)
-
+        lossi = loss(iB,fieldp,H,y,fw0,costfun,epsilon2,0,L2reg)
+        @show lossi
+        error("ll")
         if (now() - t0) > Dates.Second(3)
             #@show i,loss(iB,fieldp,H,y,fw0,costfun,epsilon2,0,L2reg)
             t0 = now()

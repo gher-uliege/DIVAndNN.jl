@@ -46,9 +46,3 @@ end
 
 
 
-fname = joinpath(datadir,"balticZooplankton.csv")
-years = 2007:2013
-scientificname = scientificname_accepted[1]
-
-
-lon,lat,obstime,value,ids = loadbyname(fname,years,scientificname)

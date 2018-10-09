@@ -11,6 +11,7 @@ if VERSION >= v"0.7"
     using Statistics
     using Printf
     using FileIO
+    using Dates
 else
     using Compat: @info, @warn, range, cat
 end
@@ -63,37 +64,6 @@ function validate(xyi,value_analysis,xy_cv,value_cv )
     return RMS
 end
 
-
-function binobs(xy,v,XY)
-    sz = size(XY[1])
-    n = length(sz)
-    sumv = zeros(sz)
-    sumv2 = zeros(sz)
-    count = zeros(sz)
-
-    xy0 = [XY[i][1] for i = 1:n]
-
-    dxy0 = [XY[i][2,2] - xy0[i] for i = 1:n]
-
-    ind = zeros(Int,n)
-
-    for j in eachindex(v)
-
-        for i = 1:n
-            ind[i] = round(Int,(xy[i][j] - xy0[i]) / dxy0[i]) + 1
-        end
-
-        count[ind...] += 1
-        sumv[ind...] += v[j]
-        sumv2[ind...] += v[j]^2
-    end
-
-    meanv = sumv./count
-
-    return meanv
-end
-
-coast() = contourf(bx,by,b' .> 0, levels=[0,.5], cmap = "gray")
 
 include("DIVAnd_covar.jl")
 include("emodnet_bio_grid.jl")
@@ -164,8 +134,6 @@ end
 
 
 fname = joinpath(datadir,"balticZooplankton.csv")
-
-
 scientificname_accepted = listnames(fname);
 
 

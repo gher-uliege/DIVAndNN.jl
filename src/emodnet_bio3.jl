@@ -97,7 +97,8 @@ mask2,(pm,pn,po),(xi,yi,zi) = DIVAnd.domain(bathname,bathisglobal,gridlon,gridla
 
 covars_fname = [("bathymetry.nc","batymetry",identity),
                 ("dist2coast_subset.nc","distance",identity),
-                #("Chlorophyll/chloro_reinterp.nc","chla",identity),
+                ("Chlorophyll/chloro_reinterp.nc","chla",identity),
+                ("oxygen_reinterp.nc","oxygen",identity),
                 ("salinity.nc","salinity",log),
                 ("temperature.nc","temperature",identity)]
 
@@ -242,8 +243,8 @@ value_analysis2 = zeros(size(mask))
 
 lent = 0.6 # years
 niter = 10000
-#niter = 100000
-niter = 10
+niter = 100000
+#niter = 10
 
 #for l = 1:Ntries
     l=1
@@ -276,7 +277,7 @@ niter = 10
         alphabc = 0,
     );
 
-    cpme = DIVAnd_cpme(mask,(pm,pn,po),(xi,yi,zi),(lon_a,lat_a,time_a),f,(len,len,lent),epsilon2)
+    cpme = DIVAnd.DIVAnd_cpme(mask,(pm,pn,po),(xi,yi,zi),(lon_a,lat_a,time_a),f,(len,len,lent),epsilon2)
 
     value_analysis .= invtrans.(value_analysis .+ mvalue);
 

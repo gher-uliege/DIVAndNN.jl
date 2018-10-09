@@ -1,4 +1,7 @@
 
+include("emodnet_bio_loadobs.jl")
+
+
 fname = joinpath(datadir,"Olivier-Benthos/tab.csv");
 data,header = readdlm(fname,',',header = true)
 header = header[:]

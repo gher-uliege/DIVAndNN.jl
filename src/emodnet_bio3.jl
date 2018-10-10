@@ -70,7 +70,7 @@ include("emodnet_bio_grid.jl")
 include("emodnet_bio_loadobs.jl")
 
 outdir = joinpath(datadir,"Results","Zooplankton")
-outdir = joinpath(datadir,"Results","Zooplankton-test")
+outdir = joinpath(datadir,"Results","Zooplankton-test2")
 mkpath(outdir)
 
 if VERSION >= v"0.7"
@@ -249,6 +249,7 @@ niter = 100000
 #niter = 300000
 #niter = 10
 #niter = 2000
+niter = 300000
 
 #for l = 1:Ntries
     l=1

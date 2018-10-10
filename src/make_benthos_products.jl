@@ -50,10 +50,9 @@ Perform 1. data transformation,
 2. DIVAnd interpolation and
 3. inverse transformation
 """
-function make_analysis(obslon, obslat, g1::Array, g2::Array, g3::Array)
+function make_analysis(obslon, obslat, g1, g2, g3)
 
     # Transformed fields
-
     g1log = log.(g1.+1);
     g2log = log.(g2.+1);
     g3log = log.(g3.+1);
@@ -69,16 +68,55 @@ function make_analysis(obslon, obslat, g1::Array, g2::Array, g3::Array)
         (obslon,obslat), g3log .- mean(g3log),len,epsilon2,alphabc=2);
 
     # Tranform back and relative fields
-    fi1ori = exp.(fi1 .+ mean(g1log)) .- 1;
-    fi2ori = exp.(fi2 .+ mean(g2log)) .- 1;
-    fi3ori = exp.(fi3 .+ mean(g3log)) .- 1;
-    fi1ori[fi1ori.<0] .= 0.
-    fi2ori[fi2ori.<0] .= 0.
-    fi3ori[fi3ori.<0] .= 0.
-    totalfield = fi1ori + fi2ori + fi3ori;
-    fi1rel, fi2rel, fi3rel = fi1ori./totalfield, fi2ori./totalfield, fi3ori./totalfield;
+    f1ori = exp.(fi1 .+ mean(g1log)) .- 1;
+    f2ori = exp.(fi2 .+ mean(g2log)) .- 1;
+    f3ori = exp.(fi3 .+ mean(g3log)) .- 1;
+    f1ori[f1ori.<0] .= 0.
+    f2ori[f2ori.<0] .= 0.
+    f3ori[f3ori.<0] .= 0.
+    totalfield = f1ori + f2ori + f3ori;
 
-    return f1rel, f2rel, f3real, totalfield
+    f1rel, f2rel, f3rel = f1ori./totalfield, f2ori./totalfield, f3ori./totalfield;
+
+    return f1rel, f2rel, f3rel, totalfield
+end
+
+"""
+write_benthos_nc(filename, gridlon, gridlat, field1, field2, field3)
+
+Write the result of the analysis (`make_analysis`) in a netCDF file
+"""
+function write_benthos_nc(filename::String, gridlon::Array, gridlat::Array,
+        field1::Array, field2::Array, field3::Array)
+
+    Dataset(filename,"c") do ds
+
+        nlon = length(gridlon);
+        nlat = length(gridlat);
+
+        # Define the dimension "lon" and "lat" with the size 100 and 110 resp.
+        defDim(ds,"lon",nlon);
+        defDim(ds,"lat",nlat);
+
+        # Define a global attribute
+        ds.attrib["title"] = "Interpolated Benthos "
+
+        # Define the variables and coordinates
+        lon = defVar(ds,"lon",Float32,("lon",))
+        lat = defVar(ds,"lat",Float32,("lat",))
+        g1 = defVar(ds,"g1",Float64,("lon","lat"))
+        g2 = defVar(ds,"g2",Float64,("lon","lat"))
+        g3 = defVar(ds,"g3",Float64,("lon","lat"))
+
+        # Fill the coord vectors and the fields
+        lon[:] = gridlonBenthos
+        lat[:] = gridlatBenthos
+
+        g1[:,:] = field1
+        g2[:,:] = field2
+        g3[:,:] = field3
+
+    end
 end
 
 # Grid stored in emodnet_bio_grid.jl
@@ -109,19 +147,26 @@ epsilon2 = 2.;
 
 
 # Read data
-fname = joinpath(datadir, "Olivier-Benthos/tab.csv");
+fname = joinpath(datadir, "Olivier-Benthos/Benthos_tabSR.csv");
 @info "Reading data file $(fname)"
 obslon, obslat, g1, g2, g3 = read_benthos(fname);
 @info extrema(obslat)
 @info extrema(obslon)
 @info "Interpolating"
-f1rel, f2rel, f3rel, totalfield = make_analysis(obslon, obslat, g1, g2, g3);
+make_analysis(obslon, obslat, g1, g2, g3);
 
+outputdir = "../output/"
+@info "Write netCDF"
+write_benthos_nc(joinpath(outputdir, "Benthos_tabSR.nc"), gridlonBenthos, gridlatBenthos,
+fi1rel, fi2rel, fi3rel);
 
-fname = joinpath(datadir, "Olivier-Benthos/tabsr.csv");
+fname = joinpath(datadir, "Olivier-Benthos/Benthos_tabDens.csv");
 @info "Reading data file $(fname)"
 obslon2, obslat2, g1b, g2b, g3b = read_benthos(fname);
 @info extrema(obslat2)
 @info extrema(obslon2)
 @info "Interpolating"
 f1brel, f2brel, f3brel, totalfieldb = make_analysis(obslon2, obslat2, g1b, g2b, g3b);
+@info "Write netCDF"
+write_benthos_nc(joinpath(outputdir, "Benthos_tabDens.nc"), gridlonBenthos, gridlatBenthos,
+fi1rel, fi2rel, fi3rel);

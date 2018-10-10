@@ -78,15 +78,15 @@ function make_analysis(obslon, obslat, g1, g2, g3)
 
     f1rel, f2rel, f3rel = f1ori./totalfield, f2ori./totalfield, f3ori./totalfield;
 
-    return f1rel, f2rel, f3rel, totalfield
-end
+    return f1rel, f2rel, f3rel, totalfield;
+end;
 
 """
 write_benthos_nc(filename, gridlon, gridlat, field1, field2, field3)
 
 Write the result of the analysis (`make_analysis`) in a netCDF file
 """
-function write_benthos_nc(filename::String, gridlon::Array, gridlat::Array,
+function write_benthos_nc(filename::String, gridlon, gridlat,
         field1::Array, field2::Array, field3::Array)
 
     Dataset(filename,"c") do ds
@@ -109,15 +109,15 @@ function write_benthos_nc(filename::String, gridlon::Array, gridlat::Array,
         g3 = defVar(ds,"g3",Float64,("lon","lat"))
 
         # Fill the coord vectors and the fields
-        lon[:] = gridlonBenthos
-        lat[:] = gridlatBenthos
+        lon[:] = gridlonBenthos;
+        lat[:] = gridlatBenthos;
 
-        g1[:,:] = field1
-        g2[:,:] = field2
-        g3[:,:] = field3
+        g1[:,:] = field1,
+        g2[:,:] = field2;
+        g3[:,:] = field3;
 
     end
-end
+end;
 
 # Grid stored in emodnet_bio_grid.jl
 xi,yi = DIVAnd.ndgrid(gridlonBenthos, gridlatBenthos);
@@ -153,9 +153,15 @@ obslon, obslat, g1, g2, g3 = read_benthos(fname);
 @info extrema(obslat)
 @info extrema(obslon)
 @info "Interpolating"
-make_analysis(obslon, obslat, g1, g2, g3);
+fi1rel, fi2rel, fi3rel, totalfield = make_analysis(obslon, obslat, g1, g2, g3);
 
 outputdir = "../output/"
+if !isdir(outputdir)
+    @info("Creating output directory $(outputdir)")
+    mkdir(outputdir);
+end
+
+
 @info "Write netCDF"
 write_benthos_nc(joinpath(outputdir, "Benthos_tabSR.nc"), gridlonBenthos, gridlatBenthos,
 fi1rel, fi2rel, fi3rel);

@@ -246,7 +246,7 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
     #optim = Knet.optimizers(fw0, Knet.Sgd; lr = learning_rate)
     t0 = now()
 
-    fi,s2 = DIVAnd.DIVAndrun(mask,pmn,xyi,obspos,y,len,epsilon2; alphabc = 0)
+    #fi,s2 = DIVAnd.DIVAndrun(mask,pmn,xyi,obspos,y,len,epsilon2; alphabc = 0)
     #=
     # @show sum(s2.obsout)
     x = fw0[end]
@@ -266,17 +266,14 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
     @show gradloss[end][1:10]
     @show gradloss2[1:10]
     @show maximum(abs.(gradloss2 - gradloss[end]))
+    =#
 
     # DIVAnd analysis as a first guess
     fi,s2 = DIVAnd.DIVAndrun(mask,pmn,xyi,obspos,y,len,epsilon2; alphabc = 0)
-
     @show size.(weight_bias_test)
-    weight_bias_test = weightbias(NLayers,zeros);
+    weight_bias_test = weightbias(NLayers,sz -> 0.0001*randn(sz));
     @show size.(weight_bias_test)
     @show size.(fw0)
-    =#
-
-    # use DIVAnd as a first guess for field_test
     fw0 = deepcopy([weight_bias_test..., fi[mask][:,1:1]])
 
     @show size.(fw0)

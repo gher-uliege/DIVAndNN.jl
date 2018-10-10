@@ -234,8 +234,8 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
     weight_bias_test = weightbias(NLayers)
     #weight_bias_test = weightbias(NLayers, (sz...) -> randn(sz...)/100)
 
-    field_test = DIVAnd.random(mask,pmn,len,1)[:,:,:,1][mask][:,1:1]
-    #field_test = zeros(sv.n,1)
+    #field_test = DIVAnd.random(mask,pmn,len,1)[:,:,:,1][mask][:,1:1]
+    field_test = zeros(sv.n,1)
 
     fw0 = deepcopy([weight_bias_test..., field_test])
 
@@ -274,15 +274,16 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
     weight_bias_test = weightbias(NLayers,zeros);
     @show size.(weight_bias_test)
     @show size.(fw0)
+    =#
 
+    # use DIVAnd as a first guess for field_test
     fw0 = deepcopy([weight_bias_test..., fi[mask][:,1:1]])
 
-    =#
     @show size.(fw0)
 
     for i = 1:niter
-        #iobssel = rand(Float64,size(y)) .< 0.1
-        iobssel = rand(Float64,size(y)) .< 1
+        iobssel = rand(Float64,size(y)) .< 0.1
+        #iobssel = rand(Float64,size(y)) .< 1
 
         if ((i-1) % plotevery == 0) && (plotevery != -1)
             prob_estim = model_field(fieldp,fw0,0)

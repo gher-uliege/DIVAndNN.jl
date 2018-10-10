@@ -70,6 +70,7 @@ include("emodnet_bio_grid.jl")
 include("emodnet_bio_loadobs.jl")
 
 outdir = joinpath(datadir,"Results","Zooplankton")
+outdir = joinpath(datadir,"Results","Zooplankton-test")
 mkpath(outdir)
 
 if VERSION >= v"0.7"
@@ -243,10 +244,11 @@ value_analysis = zeros(size(mask))
 value_analysis2 = zeros(size(mask))
 
 lent = 0.6 # years
-niter = 10000
 niter = 100000
-niter = 300000
+#niter = 100000
+#niter = 300000
 #niter = 10
+#niter = 2000
 
 #for l = 1:Ntries
     l=1
@@ -312,11 +314,13 @@ niter = 300000
         NLayers,
         costfun = regression,
         niter = niter,
-        dropoutprob = 0.,
-        L2reg = 0.,
+        dropoutprob = 0.01,
+        L2reg = 0.01,
+        learning_rate = 0.0001,
 	    plotres = (i,lossi,field,y) -> begin
             #@show i
 	        value_analysis2 = invtrans.(stdf * field .+ mvalue)
+                value_analysis2[value_analysis2 .< 0] .= 0
     	    RMS = validate((gridlon,gridlat,years),value_analysis2,
     	    	           (lon_cv,lat_cv,time_cv),value_cv)
             push!(RMS_diva_covar_his,RMS)
@@ -326,6 +330,7 @@ niter = 300000
     )
 
     value_analysis2 .= invtrans.(stdf * value_analysis2 .+ mvalue)
+    value_analysis2[value_analysis2 .< 0] .= 0
 
     RMS_diva_covar[l] = validate((gridlon,gridlat,years),value_analysis2,
     		           (lon_cv,lat_cv,time_cv),value_cv)

@@ -138,7 +138,8 @@ fname = joinpath(datadir,"balticZooplankton.csv")
 scientificname_accepted = listnames(fname);
 
 
-sname = scientificname_accepted[1]
+nameindex = parse(Int,get(ENV,"INDEX","1"))
+sname = scientificname_accepted[nameindex]
 #for sname in scientificname_accepted
 
     @show sname
@@ -244,6 +245,7 @@ value_analysis2 = zeros(size(mask))
 lent = 0.6 # years
 niter = 10000
 niter = 100000
+niter = 300000
 #niter = 10
 
 #for l = 1:Ntries

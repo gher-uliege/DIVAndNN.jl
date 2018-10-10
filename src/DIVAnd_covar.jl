@@ -17,8 +17,8 @@ function weightbias(NLayers,fun = randn)
     # a vector of matrices
     W = Matrix{Float64}[]
     for i = 1:length(NLayers)-1
-        push!(W,fun(NLayers[i],NLayers[i+1]))
-        push!(W,fun(1,NLayers[i+1]))
+        push!(W,fun((NLayers[i],NLayers[i+1])))
+        push!(W,fun((1,NLayers[i+1])))
     end
     return W
 end

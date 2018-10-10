@@ -8,6 +8,11 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=4000
 
+# Use as
+# sbatch --mem-per-cpu=2000 --time=12:00:00  submit_julia_index.sh  ~/src/DIVAndNN/src/emodnet_bio3.jl 1
+#
+# where 1 is the index of the specie (1 to 40)
+
 module load  EasyBuild  Python/3.5.1-foss-2016a
 
 export script="$1"

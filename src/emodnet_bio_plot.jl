@@ -12,10 +12,14 @@ end
 include("emodnet_bio_grid.jl")
 include("emodnet_bio_loadobs.jl")
 
-outdir = joinpath(datadir,"Results","Zooplankton")
-outdir = joinpath("/home/abarth/mnt/nic4/tmp/Emodnet-Bio/","Results","Zooplankton")
-outdir = joinpath("/home/abarth/mnt/nic4/tmp/Emodnet-Bio/","Results","Zooplankton-test2")
 
+if get(ENV,"CLUSTER_NAME","") == "nic4"
+    outdir = joinpath(datadir,"Results","Zooplankton")
+    outdir = joinpath(datadir,"Results","Zooplankton-test3")
+else
+    outdir = joinpath("/home/abarth/mnt/nic4/tmp/Emodnet-Bio/","Results","Zooplankton")
+    outdir = joinpath("/home/abarth/mnt/nic4/tmp/Emodnet-Bio/","Results","Zooplankton-test2")
+end
 
 fname = joinpath(datadir,"balticZooplankton.csv")
 scientificname_accepted = listnames(fname);
@@ -48,9 +52,9 @@ orientation = "horizontal"
 XY = DIVAnd.ndgrid(gridlon,gridlat)
 
 sname = scientificname_accepted[1]
-#for sname in scientificname_accepted
+for sname in scientificname_accepted
 
-sname = "Cercopagis (Cercopagis) pengoi"
+#sname = "Cercopagis (Cercopagis) pengoi"
 @show sname
 lon,lat,obstime,value,ids = loadbyname(fname,years,sname)
 outname = joinpath(outdir,"DIVAndNN-analysis-$(sname).nc")
@@ -99,4 +103,4 @@ for i = 1:length(years)
 
     savefig(joinpath(figdir,"$(sname)-$(syear).png"))
 end
-#end
+end

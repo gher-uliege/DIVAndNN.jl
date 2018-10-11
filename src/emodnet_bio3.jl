@@ -103,7 +103,7 @@ covars_fname = [("bathymetry.nc","batymetry",identity),
                 ("salinity.nc","salinity",log),
                 ("temperature.nc","temperature",identity)]
 
-sz = (length(gridlon),length(gridlat),length(years),length(covars_fname)+2)
+sz = (length(gridlon),length(gridlat),length(years),length(covars_fname)+3)
 field = zeros(sz)
 
 for i = 1:length(covars_fname)
@@ -123,9 +123,9 @@ end
 
 X,Y = DIVAnd.ndgrid(gridlon,gridlat)
 
-field[:,:,:,end-1] = repeat(X,inner = (1,1,length(years)))
-field[:,:,:,end]   = repeat(Y,inner = (1,1,length(years)))
-
+field[:,:,:,end-2] = repeat(X,inner = (1,1,length(years)))
+field[:,:,:,end-1] = repeat(Y,inner = (1,1,length(years)))
+field[:,:,:,end]   = repeat(reshape(years,(1,1,length(years))),inner = (length(gridlon),length(gridlat),1))
 
 # normalize
 

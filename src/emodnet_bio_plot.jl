@@ -15,7 +15,7 @@ include("emodnet_bio_loadobs.jl")
 
 if get(ENV,"CLUSTER_NAME","") == "nic4"
     outdir = joinpath(datadir,"Results","Zooplankton")
-    outdir = joinpath(datadir,"Results","Zooplankton-test3")
+    outdir = joinpath(datadir,"Results","Zooplankton-test4")
 else
     outdir = joinpath("/home/abarth/mnt/nic4/tmp/Emodnet-Bio/","Results","Zooplankton")
     outdir = joinpath("/home/abarth/mnt/nic4/tmp/Emodnet-Bio/","Results","Zooplankton-test2")
@@ -91,7 +91,7 @@ for i = 1:length(years)
     title("$(sname) ($(syear))")
     set_aspect_ratio()
     sel = .!isnan.(meanv);
-    scatter(XY[1][sel],XY[2][sel],10,trans.(meanv[sel]))
+    scatter(XY[1][sel],XY[2][sel],20,trans.(meanv[sel]), edgecolors = "w")
     clim(trans.(ca)...)
 
     subplot(1,2,2)

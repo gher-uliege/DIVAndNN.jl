@@ -2,7 +2,7 @@
 #SBATCH --job-name=julia
 ######SBATCH --mail-user=a.barth@ulg.ac.be
 ######SBATCH --mail-type=ALL
-#SBATCH --output=output-%N-%j.out
+#SBATCH --output=output-%j-%N.out
 #SBATCH --time=24:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1

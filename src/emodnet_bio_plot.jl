@@ -46,7 +46,7 @@ function myplot(data,ca)
     coast()
 end
 
-figure(figsize = (11,7))
+figure(figsize = (7,7))
 #orientation = "vertical"
 orientation = "horizontal"
 XY = DIVAnd.ndgrid(gridlon,gridlat)
@@ -86,7 +86,7 @@ for i = 1:length(years)
     ca = percentile(d[:],[1, 95])
 
     clf()
-    subplot(1,2,1)
+#    subplot(1,2,1)
     myplot(value_analysis2_slice,ca)
     title("$(sname) ($(syear))")
     set_aspect_ratio()
@@ -94,11 +94,11 @@ for i = 1:length(years)
     scatter(XY[1][sel],XY[2][sel],20,trans.(meanv[sel]), edgecolors = "w")
     clim(trans.(ca)...)
 
-    subplot(1,2,2)
-    myplot(meanv,ca)
-    title("Observations - $(sname) ($(syear))")
-    set_aspect_ratio()
-    #savefig(joinpath(figdir,"obs-$(sname)-$(syear).png"))
+    # subplot(1,2,2)
+    # myplot(meanv,ca)
+    # title("Observations - $(sname) ($(syear))")
+    # set_aspect_ratio()
+    # #savefig(joinpath(figdir,"obs-$(sname)-$(syear).png"))
 
 
     savefig(joinpath(figdir,"$(sname)-$(syear).png"))

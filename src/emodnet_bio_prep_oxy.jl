@@ -32,12 +32,17 @@ function read_emodnet_chem(filename::String,
     end
 end
 
+"""
+list_data_files(datadir)
+
+Provide a list of netCDF files in the directory `datadir`
+"""
 function list_data_files(datadir::String)::Array
     filelist = [];
     for (root, dirs, files) in walkdir(datadir)
         for file in files
-            # List only files starting with BalticOxygen
-            reg = r"BalticOxygen*"
+            # List only files ending with nc
+            reg = r".nc$"
 
             if occursin(reg, file)
                 fname = joinpath(root, file);
@@ -50,7 +55,13 @@ function list_data_files(datadir::String)::Array
     return filelist
 end
 
-function get_mean_field(filelist, years::UnitRange{Int64})
+"""
+get_mean_field(filelist, years)
+
+Compute the annual mean field based on a list of files and years.
+Each file of the list contains the seasonal fields for a series of years.
+"""
+function get_mean_field(filelist::Array{Any,1}, years::UnitRange{Int64})
 
     # Read coordinates from 1st file
     df = Dataset(filelist[1])
@@ -58,13 +69,13 @@ function get_mean_field(filelist, years::UnitRange{Int64})
     nlat = length(df["lat"][:])
     close(df)
 
-    meanfield = zeros(nlat, nlon, length(years));
+    meanfield = zeros(nlon, nlat, length(years));
     lon = Array{Float64,1}(undef, nlon);
     lat = Array{Float64,1}(undef, nlat);
 
     for files in filelist
         # Read data from file
-        lon, lat, field = read_emodnet_chem(fname,
+        lon, lat, field = read_emodnet_chem(files,
             "Water_body_dissolved_oxygen_concentration",
             minimum(years), maximum(years));
 
@@ -78,7 +89,12 @@ function get_mean_field(filelist, years::UnitRange{Int64})
 end;
 
 
+"""
+write_oxy_interp(gridlon, gridlat, years, field_interp, filename)
 
+Write the longitude, latitude, time (years) and interpolated field in the
+file `filename`. 
+"""
 function write_oxy_interp(gridlon, gridlat, years, field_interp, filename::String)
 
     Dataset(filename,"c") do ds
@@ -110,7 +126,7 @@ function write_oxy_interp(gridlon, gridlat, years, field_interp, filename::Strin
 end
 
 filelist = list_data_files(datadir)
-lon, lat, meanfield = get_mean_field(datadir, years);
+lon, lat, meanfield = get_mean_field(filelist, years);
 
 field_interp = zeros(length(gridlon), length(gridlat), length(years));
 xx, yy = DIVAnd.ndgrid(gridlon, gridlat);

@@ -112,7 +112,8 @@ Write the result of the analysis (`make_analysis`) and of the error computation 
 in a netCDF file `filename`.
 """
 function write_benthos_nc(filename::String, gridlon, gridlat,
-        field1::Array, field2::Array, field3::Array)
+        field1::Array, field2::Array, field3::Array,
+        err1::Array, err2::Array, err3::Array)
 
     Dataset(filename,"c") do ds
 
@@ -142,8 +143,8 @@ function write_benthos_nc(filename::String, gridlon, gridlat,
 
 
         # Fill the coord vectors and the fields
-        lon[:] = gridlonBenthos;
-        lat[:] = gridlatBenthos;
+        lon[:] = gridlon;
+        lat[:] = gridlat;
 
         g1[:,:] = field1;
         g2[:,:] = field2;

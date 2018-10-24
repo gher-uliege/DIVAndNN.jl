@@ -13,3 +13,7 @@ years = 2007:2013
 dlon, dlat = 1/10., 1/10.
 gridlonBenthos = -10. : dlon : 35.
 gridlatBenthos = 36. : dlat : 73.
+
+# bounds for the Fish product
+gridlonFish = -16 : dlon : 23
+gridlatFish = 36 : dlat :  62

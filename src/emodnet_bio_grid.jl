@@ -4,6 +4,8 @@ gridlon = 9.0 : 0.1 : 30.8
 gridlat = 53.0 : 0.1 : 66.1
 
 datadir = get(ENV,"DATADIR",expanduser("~/tmp/Emodnet-Bio"))
+figdir = "../figures/"
+outputdir = "../output/"
 
 years = 2007:2013
 

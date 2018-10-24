@@ -5,6 +5,13 @@ using Dates
 using Statistics
 include("emodnet_bio_grid.jl");
 
+"""
+```julia-repl
+read_emodnet_chem(filename, varname, yearmin, yearmax, valex)
+```
+Read the coordinates and the variable `varname` from the file `filename`,
+keeping only the observations between `yearmin` and `yearmax`.
+"""
 function read_emodnet_chem(filename::String,
         varname::String,
         yearmin::Int64, yearmax::Int64, valex::Float64=-999.)
@@ -33,8 +40,9 @@ function read_emodnet_chem(filename::String,
 end
 
 """
-list_data_files(datadir)
-
+```julia-repl
+filelist = list_data_files(datadir)
+```
 Provide a list of netCDF files in the directory `datadir`
 """
 function list_data_files(datadir::String)::Array
@@ -56,8 +64,9 @@ function list_data_files(datadir::String)::Array
 end
 
 """
+```julia-repl
 get_mean_field(filelist, years)
-
+```
 Compute the annual mean field based on a list of files and years.
 Each file of the list contains the seasonal fields for a series of years.
 """
@@ -90,10 +99,11 @@ end;
 
 
 """
+```julia-repl
 write_oxy_interp(gridlon, gridlat, years, field_interp, filename)
-
+```
 Write the longitude, latitude, time (years) and interpolated field in the
-file `filename`. 
+file `filename`.
 """
 function write_oxy_interp(gridlon, gridlat, years, field_interp, filename::String)
 

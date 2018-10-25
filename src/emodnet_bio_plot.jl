@@ -18,7 +18,7 @@ if get(ENV,"CLUSTER_NAME","") == "nic4"
     outdir = joinpath(datadir,"Results","Zooplankton-test4")
 else
     outdir = joinpath("/home/abarth/mnt/nic4/tmp/Emodnet-Bio/","Results","Zooplankton")
-    outdir = joinpath("/home/abarth/mnt/nic4/tmp/Emodnet-Bio/","Results","Zooplankton-test2")
+    outdir = joinpath("/home/abarth/mnt/nic4/tmp/Emodnet-Bio/","Results","Zooplankton-test5")
 end
 
 fname = joinpath(datadir,"balticZooplankton.csv")

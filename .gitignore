@@ -1,1 +1,4 @@
 *~
+output/
+figures/
+notebooks/.ipynb_checkpoints

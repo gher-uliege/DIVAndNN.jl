@@ -5,13 +5,14 @@ using CSV
 using PyPlot
 
 """
-read_woa_mld(filename)
-
+```julia-repl
+lon, lat, field = read_woa_mld(filename)
+```
 Read the content of WOA data file (ascii)
-and return the coordinates (lon, lat and mixed layer depth)
+and return the coordinates (lon, lat) and the variable (mixed layer depth)
 """
 function read_woa_mld(filename::String)
-    
+
     lon = Array{Float64,2}(undef,180,360)
     lat = Array{Float64,2}(undef,180,360)
     field = Array{Float64,2}(undef,180,360)
@@ -26,7 +27,7 @@ function read_woa_mld(filename::String)
             lon[iline] = parse(Float64, linesplit[2]);
             field[iline] = parse(Float64, linesplit[3]);
             iline += 1
-        end    
+        end
     end
     lon2write = sort(unique(lon));
     lat2write = sort(unique(lat));
@@ -34,15 +35,15 @@ function read_woa_mld(filename::String)
 end
 
 """
+```julia-repl
 write_MLD_netCDF(outputfile, datadir)
-
+```
 Create a netCDF file storing the MLD from the World Ocean Atlas
 
 Inputs
     outputfile: name of the new netCDF file
     datadir: directory where the WOA ascii files (mld.pt.0mm.001) are located
 """
-
 function write_MLD_netCDF(outputfile::String, datadir="./MLD/WOA/"::String)
 
     nlon = 360
@@ -70,14 +71,14 @@ function write_MLD_netCDF(outputfile::String, datadir="./MLD/WOA/"::String)
         lat.attrib["long_name"] = "Latitude coordinate"
         lat.attrib["units"] = "degrees_north"
         lat.attrib["valid_min"] = -90.
-        lat.attrib["valid_max"] = 90. 
+        lat.attrib["valid_max"] = 90.
         lat.attrib["axis"] = "Y"
 
         lon.attrib["standard_name"] = "longitude"
         lon.attrib["long_name"] = "Longitude coordinate"
         lon.attrib["units"] = "degrees_east"
         lon.attrib["valid_min"] = -180.
-        lon.attrib["valid_max"] = 180. 
+        lon.attrib["valid_max"] = 180.
         lon.attrib["axis"] = "X"
 
         MLD = defVar(ds,"MLD",Float64,("lon","lat","time"))
@@ -108,7 +109,3 @@ function write_MLD_netCDF(outputfile::String, datadir="./MLD/WOA/"::String)
         end
     end
 end
-
-write_MLD_netCDF("pp.nc", "../Datasets/MLD/WOA/")
-
-

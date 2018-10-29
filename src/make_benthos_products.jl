@@ -16,11 +16,11 @@ else
 end
 
 include("../src/emodnet_bio_grid.jl");
-pyplot()
 
 """
-g1, g2, g3 = read_benthos(filename)
-
+```julia-repl
+obslon, obslat, g1, g2, g3 = read_benthos(filename)
+```
 Read the data from the benthos data file
 """
 function read_benthos(filename::String)
@@ -38,6 +38,32 @@ function read_benthos(filename::String)
     g1 = Vector{Float64}(data[:,findfirst(header .== "g1")]);
     g2 = Vector{Float64}(data[:,findfirst(header .== "g2")]);
     g3 = Vector{Float64}(data[:,findfirst(header .== "g3")]);
+
+    return obslon, obslat, g1, g2, g3
+end
+
+"""
+```julia-repl
+obslon, obslat, g1, g2, g3 = read_benthos(filename)
+```
+Read the data from the benthos data file with column as follows:
+data,x,y,sta,g1.abs,g2.abs,g3.abs,g1.rel,g2.rel,g3.rel
+"""
+function read_benthos_abs(filename::String)
+    data,header = readdlm(filename,',',header = true)
+    header = header[:]
+
+    # "data","x","y","sta","g1","g2","g3"
+    dataname = Vector{String}(data[:,findfirst(header .== "data")]);
+
+    obslon = Vector{Float64}(data[:,findfirst(header .== "x")]);
+    obslat = Vector{Float64}(data[:,findfirst(header .== "y")]);
+
+    stationname = Vector{String}(data[:,findfirst(header .== "sta")]);
+
+    g1 = Vector{Float64}(data[:,findfirst(header .== "g1.abs")]);
+    g2 = Vector{Float64}(data[:,findfirst(header .== "g2.abs")]);
+    g3 = Vector{Float64}(data[:,findfirst(header .== "g3.abs")]);
 
     return obslon, obslat, g1, g2, g3
 end

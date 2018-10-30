@@ -157,6 +157,15 @@ function write_benthos_nc(filename::String, gridlon, gridlat,
         lon = defVar(ds,"lon",Float32,("lon",))
         lat = defVar(ds,"lat",Float32,("lat",))
 
+        # Attributes
+        lat.attrib["long_name"] = "Latitude";
+        lat.attrib["standard_name"] = "latitude";
+        lat.attrib["units"] = "degrees_north";
+
+        lon.attrib["long_name"] = "Longitude";
+        lon.attrib["standard_name"] = "longitude";
+        lon.attrib["units"] = "degrees_east";
+
         # Interpolated fields
         g1 = defVar(ds,"g1",Float64,("lon","lat"))
         g2 = defVar(ds,"g2",Float64,("lon","lat"))
@@ -166,7 +175,6 @@ function write_benthos_nc(filename::String, gridlon, gridlat,
         g1_err = defVar(ds,"g1_err",Float64,("lon","lat"))
         g2_err = defVar(ds,"g2_err",Float64,("lon","lat"))
         g3_err = defVar(ds,"g3_err",Float64,("lon","lat"))
-
 
         # Fill the coord vectors and the fields
         lon[:] = gridlon;
@@ -217,9 +225,44 @@ function make_plot_grid(field1, field2, field3, fieldtotal; vmin=0, vmax=10.)
     #PyPlot.scatter(obslon, obslat, s=0.5, c=g3log, vmin=0, vmax=10.)
     colorbar(pcm3)[:ax][:tick_params](labelsize=8)
     ax4 = subplot(2,2,4)
-    pcm4 = pcolormesh(gridlonBenthos, gridlatBenthos, permutedims(fieldtotal, [2,1]), vmax=300)
+    pcm4 = pcolormesh(gridlonBenthos, gridlatBenthos, permutedims(fieldtotal, [2,1]), vmin=0, vmax=1)
     PyPlot.contourf(bx,by,permutedims(b,[2,1]), levels = [-1e5,0], colors = [[.5,.5,.5]])
     ax4[:tick_params]("both",labelsize=6)
     gca()[:set_aspect](1/cos(mean([ylim()...]) * pi/180))
     colorbar(pcm4)[:ax][:tick_params](labelsize=8)
+end
+
+"""
+```julia-repl
+make_plot_grid3(field1, field2, field3, vmin, vmax)
+```
+Create a figure with the 3 fields side-by-side.
+vmin and vmax are applied as the lower and upper limits for the field values.
+"""
+function make_plot_grid3(field1, field2, field3; vmin=0, vmax=1.)
+    figure("benthos_results", figsize=(12,8))
+    ax1 = subplot(1,3,1)
+    title("Resistant", fontsize=8)
+    pcm1 = pcolormesh(gridlonBenthos, gridlatBenthos, permutedims(field1, [2,1]), vmin=vmin, vmax=vmax)
+    PyPlot.contourf(bx,by,permutedims(b,[2,1]), levels = [-1e5,0],colors = [[.5,.5,.5]])
+    ax1[:tick_params]("both",labelsize=6)
+    gca()[:set_aspect](1/cos(mean([ylim()...]) * pi/180))
+    #PyPlot.scatter(obslon, obslat, s=0.5, c=g1log, vmin=0, vmax=10.)
+    cb = colorbar(pcm1)[:ax][:tick_params](labelsize=8)
+    ax2 = subplot(1,3,2)
+    title("Resilient", fontsize=8)
+    pcm2 = pcolormesh(gridlonBenthos, gridlatBenthos, permutedims(field2, [2,1]), vmin=vmin, vmax=vmax)
+    PyPlot.contourf(bx,by,permutedims(b,[2,1]), levels = [-1e5,0],colors = [[.5,.5,.5]])
+    ax2[:tick_params]("both",labelsize=6)
+    gca()[:set_aspect](1/cos(mean([ylim()...]) * pi/180))
+    #PyPlot.scatter(obslon, obslat, s=0.5, c=g2log, vmin=0, vmax=10.)
+    colorbar(pcm2)[:ax][:tick_params](labelsize=8)
+    ax3 = subplot(1,3,3)
+    title("Vulnerable", fontsize=8)
+    pcm3 = pcolormesh(gridlonBenthos, gridlatBenthos, permutedims(field3, [2,1]), vmin=vmin, vmax=vmax)
+    PyPlot.contourf(bx,by,permutedims(b,[2,1]), levels = [-1e5,0],colors = [[.5,.5,.5]])
+    ax3[:tick_params]("both",labelsize=6)
+    gca()[:set_aspect](1/cos(mean([ylim()...]) * pi/180))
+    #PyPlot.scatter(obslon, obslat, s=0.5, c=g3log, vmin=0, vmax=10.)
+    colorbar(pcm3)[:ax][:tick_params](labelsize=8)
 end

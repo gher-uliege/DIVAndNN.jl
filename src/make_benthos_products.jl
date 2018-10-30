@@ -187,7 +187,6 @@ end;
 ```julia-repl
 make_plot_grid(field1, field2, field3, fieldtotal; vmin, vmax)
 ```
-
 Create a figure with the 3 fields and their total on a 2 by 2 grid.
 vmin and vmax are applied as the lower and upper limits for the field values.
 """

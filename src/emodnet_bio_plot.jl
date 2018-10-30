@@ -16,6 +16,7 @@ include("emodnet_bio_loadobs.jl")
 if get(ENV,"CLUSTER_NAME","") == "nic4"
     outdir = joinpath(datadir,"Results","Zooplankton")
     outdir = joinpath(datadir,"Results","Zooplankton-test4")
+    outdir = joinpath(datadir,"Results","Zooplankton-test5")
 else
     outdir = joinpath("/home/abarth/mnt/nic4/tmp/Emodnet-Bio/","Results","Zooplankton")
     outdir = joinpath("/home/abarth/mnt/nic4/tmp/Emodnet-Bio/","Results","Zooplankton-test5")
@@ -46,6 +47,15 @@ function myplot(data,ca)
     coast()
 end
 
+function binperyear((lon,lat,obstime),value,XY,syear)
+    sel_year = (Dates.year.(obstime) .== syear)
+
+    xy = (lon[sel_year],lat[sel_year]);
+    v = value[sel_year];
+    meanv = binobs(xy,v,XY);
+    return meanv
+end
+
 figure(figsize = (7,7))
 #orientation = "vertical"
 orientation = "horizontal"
@@ -64,26 +74,39 @@ value_analysis2 = nomissing(ds["abundance"][:,:,:],NaN)
 value_analysis2[value_analysis2 .< 0] .= 0
 close(ds)
 
+
+
+
+# get colorbar range
+alldata = Float64[]
+
+meanval = zeros(size(value_analysis2))
+for i = 1:length(years)
+    meanval[:,:,i] = binperyear((lon,lat,obstime),value,XY,years[i])
+end
+
+d = vcat(meanval[isfinite.(meanval)],
+         value_analysis2[isfinite.(value_analysis2)])
+
+ca = percentile(d,[1, 95])
+@show  ca
+
 i=1
 for i = 1:length(years)
 #for i = 1:1
     syear = years[i]
 
+    #meanv = binperyear((lon,lat,obstime),value,XY,syear)
+    meanv = meanval[:,:,i]
 
-    sel_year = (Dates.year.(obstime) .== syear)
+    # sel_year = (Dates.year.(obstime) .== syear)
 
-    xy = (lon[sel_year],lat[sel_year]);
-    v = value[sel_year];
-    meanv = binobs(xy,v,XY);
+    # xy = (lon[sel_year],lat[sel_year]);
+    # v = value[sel_year];
+    # meanv = binobs(xy,v,XY);
 
     value_analysis2_slice = value_analysis2[:,:,i]
 
-    d = vcat(meanv[isfinite.(meanv)],
-             value_analysis2_slice[isfinite.(value_analysis2_slice)])
-
-    #d = meanv[isfinite.(meanv)]
-    #ca = extrema(d)
-    ca = percentile(d[:],[1, 95])
 
     clf()
 #    subplot(1,2,1)

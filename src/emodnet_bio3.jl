@@ -70,7 +70,7 @@ include("emodnet_bio_grid.jl")
 include("emodnet_bio_loadobs.jl")
 
 outdir = joinpath(datadir,"Results","Zooplankton")
-outdir = joinpath(datadir,"Results","Zooplankton-test4")
+outdir = joinpath(datadir,"Results","Zooplankton-test5")
 mkpath(outdir)
 
 if VERSION >= v"0.7"
@@ -99,7 +99,7 @@ mask2,(pm,pn,po),(xi,yi,zi) = DIVAnd.domain(bathname,bathisglobal,gridlon,gridla
 covars_fname = [("bathymetry.nc","batymetry",identity),
                 ("dist2coast_subset.nc","distance",identity),
                 ("Chlorophyll/chloro_reinterp.nc","chla",identity),
-                ("oxygen_reinterp.nc","oxygen",identity),
+                ("oxygen_reinterp2.nc","oxygen",identity),
                 ("salinity.nc","salinity",log),
                 ("temperature.nc","temperature",identity)]
 

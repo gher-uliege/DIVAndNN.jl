@@ -193,3 +193,104 @@ function plot_fish_results(gridlon, gridlat, f1, f2, f3, f4, bx, by, b)
     gca()[:set_aspect](1/cos(mean([ylim()...]) * pi/180))
     colorbar(pcm4)[:ax][:tick_params](labelsize=8)
 end
+
+"""
+```julia-repl
+write_fish_time_nc(filename, gridlon, gridlat, gridtime,
+                    field1, field2, field3, field4,
+                    err1, err2, err3, err4)
+```
+Write a netCDF file containing the gridded and error fields for the
+temporal fish product
+"""
+function write_fish_time_nc(filename::String, gridlon, gridlat, gridtime,
+        field1::Array, field2::Array, field3::Array, field4::Array,
+        err1::Array, err2::Array, err3::Array, err4::Array)
+
+    Dataset(filename,"c") do ds
+
+        nlon = length(gridlon);
+        nlat = length(gridlat);
+        ntimes = length(gridtime);
+
+        # Define the dimension "lon" and "lat" with the size 100 and 110 resp.
+        defDim(ds,"lon",nlon);
+        defDim(ds,"lat",nlat);
+        defDim(ds,"time",ntimes);
+
+        # Define a global attribute
+        ds.attrib["title"] = "Interpolated Fish - temporal product"
+
+        # Define the variables and coordinates
+        lon = defVar(ds,"lon",Float32,("lon",))
+        lat = defVar(ds,"lat",Float32,("lat",))
+        time = defVar(ds,"time",Float32,("time",))
+
+        # Attributes
+        lat.attrib["long_name"] = "Latitude";
+        lat.attrib["standard_name"] = "latitude";
+        lat.attrib["units"] = "degrees_north";
+
+        lon.attrib["long_name"] = "Longitude";
+        lon.attrib["standard_name"] = "longitude";
+        lon.attrib["units"] = "degrees_east";
+
+        time.attrib["long_name"] = "Time";
+        time.attrib["standard_name"] = "time";
+        time.attrib["units"] = "years";
+
+        # Interpolated fields
+        g1 = defVar(ds,"g1",Float64,("lon","lat","time"))
+        g2 = defVar(ds,"g2",Float64,("lon","lat","time"))
+        g3 = defVar(ds,"g3",Float64,("lon","lat","time"))
+        g4 = defVar(ds,"g4",Float64,("lon","lat","time"))
+
+        # Error fields
+        g1_err = defVar(ds,"g1_err",Float64,("lon","lat","time"))
+        g2_err = defVar(ds,"g2_err",Float64,("lon","lat","time"))
+        g3_err = defVar(ds,"g3_err",Float64,("lon","lat","time"))
+        g4_err = defVar(ds,"g4_err",Float64,("lon","lat","time"))
+
+        # Fill the coord vectors and the fields
+        lon[:] = gridlon;
+        lat[:] = gridlat;
+        time[:] = gridtime;
+
+        g1[:,:,:] = field1;
+        g2[:,:,:] = field2;
+        g3[:,:,:] = field3;
+        g4[:,:,:] = field4;
+
+        g1_err[:,:,:] = err1;
+        g2_err[:,:,:] = err2;
+        g3_err[:,:,:] = err3;
+        g4_err[:,:,:] = err4;
+    end
+
+end;
+
+"""
+```julia-repl
+plot_fish_results_time(years,gridlon, gridlat, f1, bx, by, b)
+```
+Create the general plot for the fish products.
+One plot per fish type, all the years on the plot.
+"""
+function plot_fish_results_time(years,gridlon, gridlat, f1, bx, by, b)
+
+    yearinit = collect(years) .-1;
+    yearinit[1] = yearinit[2];
+    yearend = collect(years) .+ 1;
+    yearend[end] = yearend[end-1]
+
+    ffig = figure("fish_time",figsize=(12,12))
+    for ii = 1:size(f1)[1]
+        ax = subplot(5,4,ii)
+        title("$(yearinit[ii])-$(yearend[ii])", fontsize=8)
+        ax[:tick_params]("both",labelsize=6)
+        pcm = PyPlot.pcolormesh(gridlon, gridlat, permutedims(f1[ii,:,:], [2,1]), vmin=0, vmax=1.)
+        add_mask(bx, by, b)
+        gca()[:set_aspect](1/cos(mean([ylim()...]) * pi/180))
+        colorbar(pcm)[:ax][:tick_params](labelsize=8)
+    end
+end

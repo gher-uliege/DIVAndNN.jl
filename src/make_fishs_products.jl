@@ -48,6 +48,8 @@ function read_fish(filename::String)
     return obslon, obslat, obsyear, g1, g2, g3, g4
 end
 
+
+
 """
 ```julia-repl
 add_mask(bx, by, b)
@@ -268,6 +270,9 @@ function write_fish_time_nc(filename::String, gridlon, gridlat, gridtime,
     end
 
 end;
+
+
+
 
 """
 ```julia-repl

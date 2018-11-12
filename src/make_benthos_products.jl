@@ -109,6 +109,8 @@ function make_analysis(obslon, obslat, g1, g2, g3)
     return f1rel, f2rel, f3rel, totalfield;
 end;
 
+
+
 """
 ```julia-repl
 err1, err2, err3 = compute_error(obslon, obslat, g1, g2, g3)
@@ -208,7 +210,7 @@ function write_benthos_specific_nc(filename::String, gridlon, gridlat,
         nlon = length(gridlon);
         nlat = length(gridlat);
 
-        # Define the dimension "lon" and "lat" with the size 100 and 110 resp.
+        # Define the dimension "lon" and "lat"
         defDim(ds,"lon",nlon);
         defDim(ds,"lat",nlat);
 

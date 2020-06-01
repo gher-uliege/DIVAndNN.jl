@@ -1,9 +1,5 @@
-if VERSION >= v"0.7"
-    using Test
-    using Dates
-else
-    using Base.Test
-end
+using Test
+using Dates
 
 
 """

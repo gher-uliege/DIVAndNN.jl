@@ -146,12 +146,7 @@ for i = 1:length(years)
     @info "Year: $(years[i])"
     # Perform interpolation
     tmp_itp = interpolate((lon, lat), meanfield[:,:,i], Gridded(Linear()));
-    itp =
-        @static if VERSION >= v"0.7"
-            extrapolate(tmp_itp,Line())
-        else
-            tmp_itp
-        end
+    itp = extrapolate(tmp_itp,Line())
 
     field_interp[:,:,i] = itp.(xx, yy);
 end

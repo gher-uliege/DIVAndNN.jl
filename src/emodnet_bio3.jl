@@ -4,36 +4,22 @@ import DIVAnd
 using NCDatasets
 using Missings
 using Interpolations
-
-if VERSION >= v"0.7"
-    using Random
-    using DelimitedFiles
-    using Statistics
-    using Printf
-    using FileIO
-    using Dates
-else
-    using Compat: @info, @warn, range, cat
-end
+using Random
+using DelimitedFiles
+using Statistics
+using Printf
+using FileIO
+using Dates
 
 
 function interpcv(xyi,value_analysis,xy)
     ncv = length(xy[1])
     value_analysis_cv = zeros(ncv)
 
-    @static if VERSION >= v"0.7"
-        # https://github.com/JuliaMath/Interpolations.jl/issues/248
-        xyi = map(x -> collect(x),xyi);
-    end
+    xyi = map(x -> collect(x),xyi);
 
     tmp_itp = interpolate(xyi, value_analysis, Gridded(Linear()))
-
-    itp =
-        @static if VERSION >= v"0.7"
-            extrapolate(tmp_itp,Line())
-        else
-            tmp_itp
-        end
+    itp = extrapolate(tmp_itp,Line())
 
     #save("tmp.jld2","xyi",xyi,"value_analysis",value_analysis,"xy",xy)
     xyi = zeros(length(xy))
@@ -73,12 +59,7 @@ outdir = joinpath(datadir,"Results","Zooplankton")
 outdir = joinpath(datadir,"Results","Zooplankton-test5")
 mkpath(outdir)
 
-if VERSION >= v"0.7"
-    Random.seed!(1234)
-else
-    srand(1234)
-end
-
+Random.seed!(1234)
 
 
 # land-sea mask and domain parameters
@@ -229,11 +210,7 @@ bestfactorl,bestfactore, cvval,cvvalues, x2Ddata,y2Ddata,cvinter,xi2D,yi2D =
 
 epsilon2 = epsilon2 * bestfactore
 
-if VERSION >= v"0.7"
-    Random.seed!(1234)
-else
-    srand(12345)
-end
+Random.seed!(1234)
 
 @show len
 @show epsilon2
@@ -251,6 +228,8 @@ niter = 100000
 #niter = 10
 #niter = 2000
 niter = 400000 * 16
+#testing
+niter = 10
 
 #for l = 1:Ntries
     l=1

@@ -3,11 +3,8 @@ using DIVAnd
 using OceanPlot
 using NCDatasets
 using StatsBase
-
-if VERSION >= v"0.7"
-    using DelimitedFiles
-    using Dates
-end
+using DelimitedFiles
+using Dates
 
 include("emodnet_bio_grid.jl")
 include("emodnet_bio_loadobs.jl")

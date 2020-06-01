@@ -1,13 +1,9 @@
 import DIVAnd
 
-if VERSION >= v"0.7"
-    using Test
-    using Dates
-    using Dates: now
-    using Random
-else
-    using Base.Test
-end
+using Test
+using Dates
+using Dates: now
+using Random
 
 using Knet
 

@@ -5,15 +5,11 @@ using Missings
 using Interpolations
 using Plots
 
-if VERSION >= v"0.7"
-    using Random
-    using DelimitedFiles
-    using Statistics
-    using Printf
-    using FileIO
-else
-    using Compat: @info, @warn, range, cat
-end
+using Random
+using DelimitedFiles
+using Statistics
+using Printf
+using FileIO
 
 include("../src/emodnet_bio_grid.jl");
 

@@ -10,8 +10,8 @@ ds = Dataset(expanduser("~/workspace/ContourExtractor/data/dist2coast.nc"));
 Dlon = nomissing(ds["lon"][:])
 Dlat = nomissing(ds["lat"][:])
 
-i0,i1 = extrema(find(gridlon[1]-1 .<= Dlon .<= gridlon[end]+1))
-j0,j1 = extrema(find(gridlat[1]-1 .<= Dlat .<= gridlat[end]+1))
+i0,i1 = extrema(findall(gridlon[1]-1 .<= Dlon .<= gridlon[end]+1))
+j0,j1 = extrema(findall(gridlat[1]-1 .<= Dlat .<= gridlat[end]+1))
 
 D = nomissing(ds["distance2coast"][i0:i1,j0:j1]);
 

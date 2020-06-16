@@ -37,10 +37,15 @@ function plotanalysis(fname)
     end
 
     function obsplot(lon,lat,value,titlestr)
+        #=
         sel = value .== 0
         scatter(lon[sel],lat[sel],14,value[sel],cmap = cmap,marker = "x")
         sel = value .== 1
         scatter(lon[sel],lat[sel],4,value[sel],cmap = cmap,marker = "o")
+        =#
+
+        XY = DIVAnd.ndgrid(gridlon,gridlat)
+        pcolor(gridlon,gridlat,binobs((lon,lat),value,XY)')
         clim(0,1)
         title(titlestr)
         #colorbar(orientation=orientation)
@@ -62,7 +67,7 @@ function plotanalysis(fname)
     cbar_ax = fig.add_axes([0.55, 0.35, 0.35, 0.025]); fig.colorbar(imm, cax=cbar_ax,orientation=orientation)
 
     subplot(2,2,2);
-    scatter(lon_a,lat_a,10,value_a,cmap = cmap)
+    #scatter(lon_a,lat_a,10,value_a,cmap = cmap)
     obsplot(lon_a,lat_a,value_a,"(b) Data used in the analysis")
 
     @show mean(value_analysis[isfinite.(value_analysis)])
@@ -73,7 +78,6 @@ function plotanalysis(fname)
     obsplot(lon_cv,lat_cv,value_cv,"(c) Validation data")
 
     savefig(replace(fname,".nc" => ".png"))
-    close("all")
 end
 
 outdir = joinpath(datadir,"Results","emodnet-bio-2020")
@@ -81,6 +85,7 @@ outdir = joinpath(datadir,"Results","emodnet-bio-2020")
 fname = expanduser("~/tmp/Emodnet-Bio2020/Results/emodnet-bio-2020/DIVAndNN_Actinocyclus_interp.nc")
 
 for fname in glob("*nc",outdir)
+    close("all")
     @info(fname)
     plotanalysis(fname)
 end

@@ -69,8 +69,14 @@ function plotanalysis(fname)
     obsplot(lon_cv,lat_cv,value_cv,"(c) Validation data")
 
     savefig(replace(fname,".nc" => ".png"))
-
+    close("all")
 end
 
+outdir = joinpath(datadir,"Results","emodnet-bio-2020")
+
 fname = expanduser("~/tmp/Emodnet-Bio2020/Results/emodnet-bio-2020/DIVAndNN_Actinocyclus_interp.nc")
-plotanalysis(fname)
+
+for fname in glob("*nc",outdir)
+    @info(fname)
+    plotanalysis(fname)
+end

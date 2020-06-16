@@ -63,7 +63,7 @@ end
 # dirname = "/home/abarth/tmp/Emodnet-Bio2020/CSV-split"
 
 function listnames(df::Format2020)
-    return sort(unique(map(fn -> split(basename(fn),"-")[1],glob("*" * df.type * ".csv",df.dirname))))
+    return sort(unique(map(fn -> rsplit(basename(fn),"-",limit=3)[1],glob("*" * df.type * ".csv",df.dirname))))
 end
 
 

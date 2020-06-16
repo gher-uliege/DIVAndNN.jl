@@ -77,7 +77,7 @@ function loadbyname(df::Format2020,years,scientificname)
         latp = Array{Float64, 1}(undef, npoints)
 
         for i = 1:npoints
-            lonp[i], latp[i], e = transform(espgs32361, wgs84, [lon[i], lat[i], 0.])
+            lonp[i], latp[i], e = Proj4.transform(espgs32361, wgs84, [lon[i], lat[i], 0.])
         end
 
         return lonp, latp

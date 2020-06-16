@@ -1,18 +1,19 @@
-import DIVAnd
 #using PyPlot
 using CSV
 using DataFrames
-using NCDatasets
-using Missings
-using Interpolations
-using Random
-using DelimitedFiles
-using Statistics
-using Printf
-using FileIO
 using Dates
-using Proj4
+using DelimitedFiles
+import DIVAnd
+using FileIO
+using Glob
+using Interpolations
 using JSON
+using Missings
+using NCDatasets
+using Printf
+using Proj4
+using Random
+using Statistics
 
 include(expanduser("~/src/EMODnet-Biology-Interpolated-Maps/scripts/validate_probability.jl"))
 include(expanduser("~/src/EMODnet-Biology-Interpolated-Maps/scripts/PhytoInterp.jl"))

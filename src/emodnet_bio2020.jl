@@ -12,6 +12,7 @@ using Printf
 using FileIO
 using Dates
 using Proj4
+using JSON
 
 include(expanduser("~/src/EMODnet-Biology-Interpolated-Maps/scripts/validate_probability.jl"))
 include(expanduser("~/src/EMODnet-Biology-Interpolated-Maps/scripts/PhytoInterp.jl"))
@@ -114,22 +115,20 @@ end
 #fname = Format2018(joinpath(datadir,"balticZooplankton.csv"))
 #fname = Format2020("/home/abarth/src/EMODnet-Biology-Interpolated-Maps/analysis/data/Biddulphia_sinensis1995-2020.csv")
 
-fname = Format2020("/home/abarth/tmp/Emodnet-Bio2020/CSV-split","analysis")
+data_analysis = Format2020("/home/abarth/tmp/Emodnet-Bio2020/CSV-split","analysis")
+data_validation = Format2020("/home/abarth/tmp/Emodnet-Bio2020/CSV-split","validation")
 
-fname_validation = Format2020("/home/abarth/tmp/Emodnet-Bio2020/CSV-split","validation")
 
-
-scientificname_accepted = listnames(fname);
+scientificname_accepted = listnames(data_analysis);
 
 
 nameindex = parse(Int,get(ENV,"INDEX","1"))
 sname = String(scientificname_accepted[nameindex])
 #for sname in scientificname_accepted
 
-@show sname
-lon_a,lat_a,obstime_a,value_a,ids_a = loadbyname(fname,years,sname)
-
-lon_cv,lat_cv,obstime_cv,value_cv,ids_cv = loadbyname(fname_validation,years,sname)
+@info sname
+lon_a,lat_a,obstime_a,value_a,ids_a = loadbyname(data_analysis,years,sname)
+lon_cv,lat_cv,obstime_cv,value_cv,ids_cv = loadbyname(data_validation,years,sname)
 
 #time = Float64.(Dates.year.(obstime_a))
 
@@ -187,9 +186,7 @@ Random.seed!(1234)
 #@show epsilon2
 #@show bestfactore
 
-Ntries = 1
 value_analysis = zeros(size(mask))
-value_analysis2 = zeros(size(mask))
 
 lent = 0.6 # years
 lent = 0. # years
@@ -202,6 +199,7 @@ niter = 2000*100
 #testing
 #niter = 10
 niter = 2000
+#niter = 2000*2
 
 #for l = 1:Ntries
 l=1
@@ -213,11 +211,13 @@ l=1
 #epsilon2ap = 50
 #@show std(value)
 #epsilon2ap = epsilon2
-epsilon2ap = 0.5
+#epsilon2ap = 0.5
 epsilon2ap = 1.
 
 #NLayers = [size(field)[end],3,1]
 NLayers = [size(field)[end],4,1]
+
+#NLayers = [size(field)[end],4,2,1]
 #NLayers = [size(field)[end],5,1]
 #NLayers = [size(field)[end],2,1]
 #NLayers = [size(field)[end],1]
@@ -227,6 +227,8 @@ learning_rate = 0.00001
 learning_rate = 0.001
 L2reg = 0.01
 dropoutprob = 0.01
+#dropoutprob = 0.1
+#dropoutprob = 0.99
 
 xobs_a = if ndimensions == 3
     (lon_a,lat_a,time_a)
@@ -240,12 +242,12 @@ else
     (len,len)
 end
 
-function plotres(i,lossi,value_analysis2,y)
-    vp = validate_probability((gridlon,gridlat),value_analysis2,(lon_cv,lat_cv),value_cv)
+function plotres(i,lossi,value_analysis,y)
+    vp = validate_probability((gridlon,gridlat),value_analysis,(lon_cv,lat_cv),value_cv)
 	@printf("| %10d | %30.5f | %30.5f | %30.5f |\n",i,lossi,vp,0.)
 end
 
-value_analysis2[:],fw0 = analysisprob(
+value_analysis[:],fw0 = analysisprob(
     mask,pmn,xyi,xobs_a,
     value_a,
     lenxy,epsilon2ap,
@@ -260,13 +262,13 @@ value_analysis2[:],fw0 = analysisprob(
 	plotevery = 100
 )
 
-#value_analysis2 .= invtrans.(stdf * value_analysis2 .+ mvalue)
-#value_analysis2[value_analysis2 .< 0] .= 0
+#value_analysis .= invtrans.(stdf * value_analysis .+ mvalue)
+#value_analysis[value_analysis .< 0] .= 0
 
-#RMS_diva_covar[l] = validate((gridlon,gridlat,years),value_analysis2,
+#RMS_diva_covar[l] = validate((gridlon,gridlat,years),value_analysis,
 #		           (lon_cv,lat_cv,time_cv),value_cv)
 
-#return value_analysis,RMS_diva,value_analysis2,RMS_diva_covar
+#return value_analysis,RMS_diva,value_analysis,RMS_diva_covar
 
 #end
 
@@ -282,12 +284,12 @@ ncvarattrib = Dict("long_name" => "abundance of $(sname)",
 )
 
 outname = joinpath(outdir,"DIVAnd-analysis-$(sname).nc")
-DIVAnd.save(outname,(gridlon,gridlat,DateTime.(years,1,1)),value_analysis,"abundance"; 
+DIVAnd.save(outname,(gridlon,gridlat,DateTime.(years,1,1)),value_analysis,"abundance";
 relerr = cpme, ncvarattrib = ncvarattrib)
 
 
 outname = joinpath(outdir,"DIVAndNN-analysis-$(sname).nc")
-DIVAnd.save(outname,(gridlon,gridlat,DateTime.(years,1,1)),value_analysis2,"abundance"; 
+DIVAnd.save(outname,(gridlon,gridlat,DateTime.(years,1,1)),value_analysis,"abundance";
 relerr = cpme, ncvarattrib = ncvarattrib)
 
 =#
@@ -295,11 +297,27 @@ relerr = cpme, ncvarattrib = ncvarattrib)
 
 #end
 
-vp = validate_probability((gridlon,gridlat),value_analysis2,(lon_cv,lat_cv),value_cv)
+vp = validate_probability((gridlon,gridlat),value_analysis,(lon_cv,lat_cv),value_cv)
 @show vp
 
 outname = joinpath(outdir,"DIVAndNN_$(sname)_interp.nc")
 
-create_nc_results(outname, gridlon, gridlat, value_analysis2, sname;
+create_nc_results(outname, gridlon, gridlat, value_analysis, sname;
                   varname = "probability", long_name="occurance probability");
 
+paramname = joinpath(outdir,"DIVAndNN_$(sname)_interp.json")
+
+open(paramname,"w") do f
+    write(f,JSON.json(
+        Dict(
+            "validation" => vp,
+            "L2reg" =>            L2reg,
+            "dropoutprob" =>      dropoutprob,
+            "epsilon2ap" =>       epsilon2ap,
+            "len" =>              len,
+            "niter" =>            niter,
+            "learning_rate" =>    learning_rate,
+            "NLayers" =>    NLayers,
+        )
+    ))
+end

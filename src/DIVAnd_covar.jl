@@ -90,8 +90,8 @@ function nll(field_test,H,y,epsilon2)
 
     #eps = 0.00001
     eps = 0.0001
-    #P_test = (1-2*eps) * prob_test .+ eps
-    P_test = max.(min.(prob_test,1 - eps),eps)
+    P_test = (1-2*eps) * prob_test .+ eps
+    #P_test = max.(min.(prob_test,1 - eps),eps)
 
     #P = DIVAnd.pack(sv,(prob_test,));
 

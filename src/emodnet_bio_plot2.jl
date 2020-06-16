@@ -6,6 +6,7 @@ using CSV
 using DataFrames
 using Proj4
 using Dates
+using Statistics
 
 include("emodnet_bio_grid.jl")
 include("emodnet_bio_loadobs.jl")
@@ -64,6 +65,9 @@ function plotanalysis(fname)
     scatter(lon_a,lat_a,10,value_a,cmap = cmap)
     obsplot(lon_a,lat_a,value_a,"(b) Data used in the analysis")
 
+    @show mean(value_analysis[isfinite.(value_analysis)])
+    @show mean(value_a)
+    @show mean(value_cv)
 
     subplot(2,2,3);
     obsplot(lon_cv,lat_cv,value_cv,"(c) Validation data")

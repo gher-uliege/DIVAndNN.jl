@@ -1,9 +1,16 @@
+
+
+struct Format2018
+    fname::String
+end
+
 """
     listnames(fname)
 
 List all unique scientific names in the file `fname`
 """
-function listnames(fname)
+function listnames(df::Format2018)
+    fname = df.fname
     data,header = readdlm(fname,',',header = true)
     @assert header == AbstractString["country" "station" "latitude" "longitude" "daycollected" "monthcollected" "yearcollected" "scientificname_accepted" "measurementvalue"]
     header = header[:]
@@ -17,7 +24,9 @@ end
 
 Load all data record with the given scientific name and within the year range
 """
-function loadbyname(fname,years,scientificname)
+function loadbyname(df::Format2018,years,scientificname)
+    fname = df.fname
+
     data,header = readdlm(fname,',',header = true)
     @assert header == AbstractString["country" "station" "latitude" "longitude" "daycollected" "monthcollected" "yearcollected" "scientificname_accepted" "measurementvalue"]
     header = header[:]
@@ -43,6 +52,57 @@ function loadbyname(fname,years,scientificname)
 
     return lon[sel],lat[sel],obstime[sel],value[sel],ids[sel]
 end
+
+
+struct Format2020
+    dirname::String
+    type::String # analysis or validation
+end
+
+# pattern = "*analysis.csv"
+# dirname = "/home/abarth/tmp/Emodnet-Bio2020/CSV-split"
+
+function listnames(df::Format2020)
+    return sort(unique(map(fn -> split(basename(fn),"-")[1],glob("*" * df.type * ".csv",df.dirname))))
+end
+
+
+function loadbyname(df::Format2020,years,scientificname)
+    function transform_coords(lon::Array, lat::Array)
+        wgs84 = Projection("+proj=longlat +datum=WGS84 +no_defs")
+        espgs32361 = Projection("+proj=utm +zone=31 +north +datum=WGS84 +units=m +no_defs")
+
+        npoints = length(lon)
+        lonp = Array{Float64, 1}(undef, npoints)
+        latp = Array{Float64, 1}(undef, npoints)
+
+        for i = 1:npoints
+            lonp[i], latp[i], e = transform(espgs32361, wgs84, [lon[i], lat[i], 0.])
+        end
+
+        return lonp, latp
+    end
+
+    filelist = glob(scientificname * "-*." * df.type * ".csv",df.dirname)
+    @assert length(filelist) == 1
+
+    fname = filelist[1]
+    df = DataFrame(CSV.read(fname));
+    xUTM = df.xUTM
+    yUTM = df.yUTM
+
+    lon, lat = transform_coords(xUTM, yUTM);
+
+    obstime = df.date
+
+    value = df.occurs
+
+    sel = (years[1] .<= Dates.year.(obstime)  .<= years[end]) .& (.!ismissing.(value))
+    ids = df.date_xUTM_yUTM
+
+    return lon[sel],lat[sel],obstime[sel],Float64.(value[sel]),ids[sel]
+end
+
 
 
 

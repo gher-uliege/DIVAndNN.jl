@@ -27,7 +27,9 @@ end
 J = -\frac{1}{m} \sum_i y_i log(p_i) + (1 - y_i) log(1 - p_i)
 =#
 function J(y,HP)
-    J = -sum(y .* log.(HP)  + (1-y) .* log.(1 - HP)) / length(y)
+    #@show extrema(y),extrema(HP)
+    J = -sum(y .* log.(HP)  + (1 .- y) .* log.(1 .- HP)) / length(y)
+    #@show J
     return J
 end
 
@@ -83,16 +85,20 @@ end
 
 # likelyhood assuming weight_test is correct
 function nll(field_test,H,y,epsilon2)
+    #@show extrema(field_test)
     prob_test = logistic.(field_test)
 
-    eps = 0.00001
-    P_test = (1-2*eps) * prob_test + eps
+    #eps = 0.00001
+    eps = 0.0001
+    #P_test = (1-2*eps) * prob_test .+ eps
+    P_test = max.(min.(prob_test,1 - eps),eps)
 
     #P = DIVAnd.pack(sv,(prob_test,));
 
     # probability at observed location
     HP = H*P_test
 
+    #@show extrema(P_test)
     #@show extrema(HP)
     #@show extrema(prob_test)
 
@@ -119,9 +125,11 @@ function loss_obs(iB,fieldp,H,y,fw,costfun,epsilon2,dropoutprob,L2reg = 0)
     fieldb = fw[end]
 
     field_test = model_field(fieldp,fw,dropoutprob)
-    #@show size(fieldp),size(field_test)
+    ##@show size(fieldp),size(field_test)
+    #@show extrema(field_test)
 
     J = costfun(field_test,H,y,epsilon2)
+    #@show J
 
     if L2reg != 0
         for i = 1:length(w)
@@ -200,6 +208,7 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
                       dropoutprob = 0.,
                       L2reg = 0,
                       learning_rate = 0.01,
+                      maxgrad = 1.,
                       )
 
     sv = DIVAnd.statevector((mask,));
@@ -223,7 +232,11 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
     H = H * DIVAnd.sparse_pack(mask)'
     # check if out observations are correctly handeld
 
-    @show length(y),sum(out),size(H)
+    #@show length(y),sum(out),size(H)
+    # remove obs out of grid
+    y = y[.!out]
+    H = H[.!out,:]
+    obspos = map(p -> p[.!out],obspos)
 
     # random initial weighs and baises with the
     # appropriate size
@@ -266,13 +279,13 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
 
     # DIVAnd analysis as a first guess
     fi,s2 = DIVAnd.DIVAndrun(mask,pmn,xyi,obspos,y,len,epsilon2; alphabc = 0)
-    @show size.(weight_bias_test)
+    #@show size.(weight_bias_test)
     weight_bias_test = weightbias(NLayers,sz -> 0.0001*randn(sz));
-    @show size.(weight_bias_test)
-    @show size.(fw0)
+    #@show size.(weight_bias_test)
+    #@show size.(fw0)
     fw0 = deepcopy([weight_bias_test..., fi[mask][:,1:1]])
 
-    @show size.(fw0)
+    #@show size.(fw0)
 
     for i = 1:niter
         iobssel = rand(Float64,size(y)) .< 0.1
@@ -283,8 +296,10 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
             prob_estim = DIVAnd.unpack(sv,prob_estim)[1]
 	        prob_estim[.!mask] .= NaN
 
+            #@show extrema(fieldp),extrema(y)
+            #@show extrema.(fw0)
             lossi = loss(iB,fieldp,H,y,fw0,costfun,epsilon2,0,L2reg)
-
+            #@show i,lossi
             if costfun == nll
                 plotres(i-1,lossi,logistic.(prob_estim),y)
             else
@@ -296,6 +311,11 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
         #gradloss = grad_loss(iB,fieldp,H,y,fw0,costfun,epsilon2,dropoutprob,L2reg)
         gradloss = grad_loss(iB,fieldp,H[iobssel,:],y[iobssel],fw0,costfun,epsilon2,dropoutprob,L2reg)
 
+        for (i,gl) in enumerate(gradloss)
+            #@show i,extrema(gl),size(gl)
+            clamp!(gl,-maxgrad,maxgrad)
+            #@show i,extrema(gl),size(gl)
+        end
         #=
         @show gradloss[end][1:10]
         @show maximum(gradloss[end])
@@ -327,6 +347,7 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
     prob_estim = DIVAnd.unpack(sv,prob_estim)[1]
     prob_estim[.!mask] .= NaN
 
+    #@show sum(prob_estim)
     #@show maximum(abs.(fi[mask] - prob_estim[mask]))
 
     if costfun == nll

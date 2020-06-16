@@ -15,11 +15,18 @@ mask = (bath .>= 0);
 #mask[1:4,1:12] .= false;
 #mask[:] = true
 X,Y = DIVAnd.ndgrid(gridlon,gridlat)
+
+#=
 mask[(X .<= 15.) .& (62 .<= Y)] .= false
 mask[(X .<= 10.) .& (Y .<= 54)] .= false
 mask[(X .<= 9.3) .& (Y .<= 56)] .= false
 
 mask = DIVAnd.floodfill(mask,CartesianIndex(50,10))
+=#
+
+# mask corresponds to the largest area
+label = DIVAnd.floodfill(mask)
+mask = label .== 1;
 
 fname = joinpath(datadir,"mask.nc")
 
@@ -31,17 +38,17 @@ ds.dim["lat"] = length(gridlat)
 
 # Declare variables
 
-nclon = defVar(ds,"lon", Float64, ("lon",)) 
+nclon = defVar(ds,"lon", Float64, ("lon",))
 nclon.attrib["units"] = "degrees_east"
 nclon.attrib["standard_name"] = "longitude"
 nclon.attrib["long_name"] = "longitude"
 
-nclat = defVar(ds,"lat", Float64, ("lat",)) 
+nclat = defVar(ds,"lat", Float64, ("lat",))
 nclat.attrib["units"] = "degrees_north"
 nclat.attrib["standard_name"] = "latitude"
 nclat.attrib["long_name"] = "latitude"
 
-ncmask = defVar(ds,"mask", Int8, ("lon", "lat")) 
+ncmask = defVar(ds,"mask", Int8, ("lon", "lat"))
 ncmask.attrib["comment"] = "1 sea; 0 land"
 
 

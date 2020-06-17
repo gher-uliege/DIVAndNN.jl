@@ -55,6 +55,8 @@ end
 
 
 covars_coord = false
+covars_const = true
+
 # load covariables
 covars_fname = [
     #("bathymetry.nc","batymetry",identity),
@@ -65,12 +67,17 @@ covars_fname = [
                 #("temperature.nc","temperature",identity)
                 ]
 
+ncovars = length(covars_fname)
+
+if covars_const
+    ncovars = ncovars + 1
+end
 
 if covars_coord
-    sz = (length(gridlon),length(gridlat),length(years),length(covars_fname)+ndimensions)
-else
-    sz = (length(gridlon),length(gridlat),length(covars_fname))
+    ncovars = ncovars + ndimensions
 end
+
+sz = (length(gridlon),length(gridlat),ncovars)
 
 field = zeros(sz)
 
@@ -96,6 +103,17 @@ end
 
 X,Y = DIVAnd.ndgrid(gridlon,gridlat)
 
+if covars_const
+    i = length(covars_fname)+1
+    @info "add const covariable"
+
+    if ndimensions == 3
+        field[:,:,:,i] .= 1
+    else
+        field[:,:,i] .= 1
+    end
+end
+
 if covars_coord
     if ndimensions == 3
         @info "add lon/lat/time as covariable"
@@ -110,15 +128,23 @@ if covars_coord
 end
 
 @show size(field)
+function std_or_1(tmp)
+    s = std(tmp)
+    if s == 0
+        return one(s)
+    else
+        return s
+    end
+end
+
 # normalize
 
 for n = 1:size(field,ndimensions+1)
     if ndimensions == 3
-        tmp = field[:,:,:,n][mask];
-        field[:,:,:,n] = (field[:,:,:,n] .- mean(tmp))./std(tmp)
+        field[:,:,:,n] = (field[:,:,:,n] .- mean(tmp)) ./ std_or_1(tmp)
     else
         tmp = field[:,:,n][mask];
-        field[:,:,n] = (field[:,:,n] .- mean(tmp))./std(tmp)
+        field[:,:,n] = (field[:,:,n] .- mean(tmp)) ./ std_or_1(tmp)
     end
 end
 
@@ -158,8 +184,9 @@ l=1
 #epsilon2ap = 0.5
 epsilon2ap = 1.
 epsilon2ap = 0.01
-epsilon2ap = 0.1
-epsilon2ap = 0.001
+#epsilon2ap = 0.1
+#epsilon2ap = 0.001
+epsilon2ap = 0.005
 
 #NLayers = [size(field)[end],3,1]
 NLayers = [size(field)[end],4,1]
@@ -172,7 +199,7 @@ NLayers = [size(field)[end],4,1]
 
 learning_rate = 0.00001
 learning_rate = 0.001
-L2reg = 0.01
+L2reg = 0.0001
 dropoutprob = 0.01
 #dropoutprob = 0.1
 #dropoutprob = 0.99

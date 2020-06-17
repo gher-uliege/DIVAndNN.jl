@@ -59,13 +59,16 @@ covars_const = true
 
 # load covariables
 covars_fname = [
-    #("bathymetry.nc","batymetry",identity),
+    ("bathymetry.nc","batymetry",identity),
     #            ("dist2coast_subset.nc","distance",identity),
                 #("Chlorophyll/chloro_reinterp.nc","chla",identity),
                 #("oxygen_reinterp2.nc","oxygen",identity),
-                #("salinity.nc","salinity",log),
-                #("temperature.nc","temperature",identity)
-                ]
+#                ("salinity.nc","salinity",log),
+#               ("temperature.nc","temperature",identity),
+    ("nitrogen.nc",      "nitrogen",identity),
+    ("phosphate.nc",     "phosphate",identity),
+    ("silicate.nc",      "silicate",identity),
+]
 
 ncovars = length(covars_fname)
 
@@ -211,6 +214,7 @@ len = 50e3
 
 outdir = joinpath(datadir,"Results","emodnet-bio-2020")
 outdir = joinpath(datadir,"Results","emodnet-bio-2020-nocovar-epsilon2ap$(epsilon2ap)-len$(len)")
+outdir = joinpath(datadir,"Results","emodnet-bio-2020-ncovars$(length(covars_fname))-epsilon2ap$(epsilon2ap)-len$(len)")
 mkpath(outdir)
 
 nameindex = parse(Int,get(ENV,"INDEX","1"))
@@ -385,6 +389,7 @@ open(paramname,"w") do f
             "name" =>    sname,
             "loss_iter" => loss_iter,
             "val_iter" => val_iter,
+            "covars" => first.(covars_fname),
         )
     ))
 end

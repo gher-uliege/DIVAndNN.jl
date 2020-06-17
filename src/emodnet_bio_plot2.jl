@@ -109,8 +109,8 @@ end
 #fname = expanduser("~/tmp/Emodnet-Bio2020/Results/emodnet-bio-2020/DIVAndNN_Actinocyclus_interp.nc")
 
 #@sync @distributed for fname in glob("*nc",outdir)
-#for fname in glob("*nc",outdir)
-for fname in glob("*nc",outdir)[1:1]
+for fname in glob("*nc",outdir)
+#for fname in glob("*nc",outdir)[1:1]
     close("all")
     @info(fname)
     plotanalysis(fname)

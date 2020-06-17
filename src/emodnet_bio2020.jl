@@ -158,7 +158,8 @@ l=1
 #epsilon2ap = 0.5
 epsilon2ap = 1.
 epsilon2ap = 0.01
-#epsilon2ap = 0.1
+epsilon2ap = 0.1
+epsilon2ap = 0.001
 
 #NLayers = [size(field)[end],3,1]
 NLayers = [size(field)[end],4,1]
@@ -176,14 +177,19 @@ dropoutprob = 0.01
 #dropoutprob = 0.1
 #dropoutprob = 0.99
 
+len = 50e3
+len = 50e3
+#len = 30e3
+#len = 20e3
+
 outdir = joinpath(datadir,"Results","emodnet-bio-2020")
-outdir = joinpath(datadir,"Results","emodnet-bio-2020-nocovar-epsilon2ap$(epsilon2ap)")
+outdir = joinpath(datadir,"Results","emodnet-bio-2020-nocovar-epsilon2ap$(epsilon2ap)-len$(len)")
 mkpath(outdir)
 
 nameindex = parse(Int,get(ENV,"INDEX","1"))
 
 #Threads.@threads for nameindex in 1:length(scientificname_accepted)
-for nameindex in 1:length(scientificname_accepted)
+#for nameindex in 1:length(scientificname_accepted)
 
 sname = String(scientificname_accepted[nameindex])
 #sname = "Lithodesmium undulatum"
@@ -247,8 +253,6 @@ DIVAnd.DIVAnd_cv(mask[:,:,1],(pm[:,:,1],pn[:,:,1]),(xi[:,:,1],yi[:,:,1]),(lon,la
 epsilon2 = epsilon2 * bestfactore
 =#
 
-len = 50e3
-len = 30e3
 
 Random.seed!(1234)
 
@@ -358,4 +362,4 @@ open(paramname,"w") do f
     ))
 end
 
-end
+#end

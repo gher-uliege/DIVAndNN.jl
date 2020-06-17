@@ -61,7 +61,7 @@ function plotanalysis(fname)
         =#
 
         @show extrema(mv)
-        pcolor(gridlon,gridlat,pyo(copy(mv')))
+        pcolor(gridlon,gridlat,pyo(copy(mv')),cmap = cmap)
         clim(cl_prop)
         title(titlestr)
         #colorbar(orientation=orientation)

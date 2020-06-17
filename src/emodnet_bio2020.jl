@@ -172,7 +172,7 @@ niter = 2000*100
 #testing
 #niter = 10
 niter = 2000
-#niter = 2000*2
+niter = 2000*2
 
 #for l = 1:Ntries
 l=1
@@ -214,13 +214,13 @@ len = 50e3
 
 outdir = joinpath(datadir,"Results","emodnet-bio-2020")
 outdir = joinpath(datadir,"Results","emodnet-bio-2020-nocovar-epsilon2ap$(epsilon2ap)-len$(len)")
-outdir = joinpath(datadir,"Results","emodnet-bio-2020-ncovars$(length(covars_fname))-epsilon2ap$(epsilon2ap)-len$(len)")
+outdir = joinpath(datadir,"Results","emodnet-bio-2020-ncovars$(length(covars_fname))-epsilon2ap$(epsilon2ap)-len$(len)-niter$(niter)")
 mkpath(outdir)
 
 nameindex = parse(Int,get(ENV,"INDEX","1"))
 
 #Threads.@threads for nameindex in 1:length(scientificname_accepted)
-#for nameindex in 1:length(scientificname_accepted)
+for nameindex in 1:length(scientificname_accepted)
 
 sname = String(scientificname_accepted[nameindex])
 #sname = "Lithodesmium undulatum"
@@ -394,4 +394,4 @@ open(paramname,"w") do f
     ))
 end
 
-#end
+end

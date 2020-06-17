@@ -14,6 +14,11 @@ using Printf
 using Proj4
 using Random
 using Statistics
+using Base.Threads
+using LinearAlgebra
+
+BLAS.set_num_threads(1)
+
 
 include(expanduser("~/src/EMODnet-Biology-Interpolated-Maps/scripts/validate_probability.jl"))
 include(expanduser("~/src/EMODnet-Biology-Interpolated-Maps/scripts/PhytoInterp.jl"))
@@ -22,9 +27,7 @@ include("DIVAnd_covar.jl")
 include("emodnet_bio_loadobs.jl")
 include("emodnet_bio_grid.jl")
 
-outdir = joinpath(datadir,"Results","emodnet-bio-2020")
 
-mkpath(outdir)
 
 Random.seed!(1234)
 
@@ -51,21 +54,22 @@ else
 end
 
 
+covars_coord = false
 # load covariables
-
-covars_fname = [("bathymetry.nc","batymetry",identity),
-                ("dist2coast_subset.nc","distance",identity),
+covars_fname = [
+    #("bathymetry.nc","batymetry",identity),
+    #            ("dist2coast_subset.nc","distance",identity),
                 #("Chlorophyll/chloro_reinterp.nc","chla",identity),
                 #("oxygen_reinterp2.nc","oxygen",identity),
-                ("salinity.nc","salinity",log),
-                ("temperature.nc","temperature",identity)
+                #("salinity.nc","salinity",log),
+                #("temperature.nc","temperature",identity)
                 ]
 
 
-if ndimensions == 3
-    sz = (length(gridlon),length(gridlat),length(years),length(covars_fname)+3)
+if covars_coord
+    sz = (length(gridlon),length(gridlat),length(years),length(covars_fname)+ndimensions)
 else
-    sz = (length(gridlon),length(gridlat),length(covars_fname)+2)
+    sz = (length(gridlon),length(gridlat),length(covars_fname))
 end
 
 field = zeros(sz)
@@ -89,20 +93,26 @@ for i = 1:length(covars_fname)
     end
 end
 
+
 X,Y = DIVAnd.ndgrid(gridlon,gridlat)
 
-if ndimensions == 3
-    field[:,:,:,end-2] = repeat(X,inner = (1,1,length(years)))
-    field[:,:,:,end-1] = repeat(Y,inner = (1,1,length(years)))
-    field[:,:,:,end]   = repeat(reshape(years,(1,1,length(years))),inner = (length(gridlon),length(gridlat),1))
-else
-    field[:,:,end-1] = X
-    field[:,:,end] = Y
+if covars_coord
+    if ndimensions == 3
+        @info "add lon/lat/time as covariable"
+        field[:,:,:,end-2] = repeat(X,inner = (1,1,length(years)))
+        field[:,:,:,end-1] = repeat(Y,inner = (1,1,length(years)))
+        field[:,:,:,end]   = repeat(reshape(years,(1,1,length(years))),inner = (length(gridlon),length(gridlat),1))
+    else
+        @info "add lon/lat as covariable"
+        field[:,:,end-1] = X
+        field[:,:,end] = Y
+    end
 end
 
+@show size(field)
 # normalize
 
-for n = 1:size(field,4)
+for n = 1:size(field,ndimensions+1)
     if ndimensions == 3
         tmp = field[:,:,:,n][mask];
         field[:,:,:,n] = (field[:,:,:,n] .- mean(tmp))./std(tmp)
@@ -122,10 +132,69 @@ data_validation = Format2020("/home/abarth/tmp/Emodnet-Bio2020/CSV-split","valid
 
 scientificname_accepted = listnames(data_analysis);
 
+lent = 0.6 # years
+lent = 0. # years
+niter = 100000
+#niter = 100000
+#niter = 300000
+#niter = 10
+niter = 2000*100
+#niter = 400000 * 16
+#testing
+#niter = 10
+niter = 2000
+#niter = 2000*2
+
+#for l = 1:Ntries
+l=1
+
+
+#epsilon2ap = 1.5
+#epsilon2ap = 2
+#epsilon2ap = 5
+#epsilon2ap = 50
+#@show std(value)
+#epsilon2ap = epsilon2
+#epsilon2ap = 0.5
+epsilon2ap = 1.
+epsilon2ap = 0.01
+#epsilon2ap = 0.1
+
+#NLayers = [size(field)[end],3,1]
+NLayers = [size(field)[end],4,1]
+
+#NLayers = [size(field)[end],4,2,1]
+#NLayers = [size(field)[end],5,1]
+#NLayers = [size(field)[end],2,1]
+#NLayers = [size(field)[end],1]
+#NLayers = []
+
+learning_rate = 0.00001
+learning_rate = 0.001
+L2reg = 0.01
+dropoutprob = 0.01
+#dropoutprob = 0.1
+#dropoutprob = 0.99
+
+outdir = joinpath(datadir,"Results","emodnet-bio-2020")
+outdir = joinpath(datadir,"Results","emodnet-bio-2020-nocovar-epsilon2ap$(epsilon2ap)")
+mkpath(outdir)
 
 nameindex = parse(Int,get(ENV,"INDEX","1"))
+
+#Threads.@threads for nameindex in 1:length(scientificname_accepted)
+for nameindex in 1:length(scientificname_accepted)
+
 sname = String(scientificname_accepted[nameindex])
-#for sname in scientificname_accepted
+#sname = "Lithodesmium undulatum"
+
+
+paramname = joinpath(outdir,"DIVAndNN_$(sname)_interp.json")
+
+#if isfile(paramname)
+#    continue
+#end
+
 
 @info sname
 lon_a,lat_a,obstime_a,value_a,ids_a = loadbyname(data_analysis,years,sname)
@@ -189,47 +258,6 @@ Random.seed!(1234)
 
 value_analysis = zeros(size(mask))
 
-lent = 0.6 # years
-lent = 0. # years
-niter = 100000
-#niter = 100000
-#niter = 300000
-#niter = 10
-niter = 2000*100
-#niter = 400000 * 16
-#testing
-#niter = 10
-niter = 2000
-#niter = 2000*2
-
-#for l = 1:Ntries
-l=1
-
-
-#epsilon2ap = 1.5
-#epsilon2ap = 2
-#epsilon2ap = 5
-#epsilon2ap = 50
-#@show std(value)
-#epsilon2ap = epsilon2
-#epsilon2ap = 0.5
-epsilon2ap = 1.
-
-#NLayers = [size(field)[end],3,1]
-NLayers = [size(field)[end],4,1]
-
-#NLayers = [size(field)[end],4,2,1]
-#NLayers = [size(field)[end],5,1]
-#NLayers = [size(field)[end],2,1]
-#NLayers = [size(field)[end],1]
-#NLayers = []
-
-learning_rate = 0.00001
-learning_rate = 0.001
-L2reg = 0.01
-dropoutprob = 0.01
-#dropoutprob = 0.1
-#dropoutprob = 0.99
 
 xobs_a = if ndimensions == 3
     (lon_a,lat_a,time_a)
@@ -243,8 +271,13 @@ else
     (len,len)
 end
 
+loss_iter = []
+val_iter = []
 function plotres(i,lossi,value_analysis,y)
+
     vp = validate_probability((gridlon,gridlat),value_analysis,(lon_cv,lat_cv),value_cv)
+    push!(loss_iter,lossi)
+    push!(val_iter,vp)
 	@printf("| %10d | %30.5f | %30.5f | %30.5f |\n",i,lossi,vp,0.)
 end
 
@@ -306,7 +339,6 @@ outname = joinpath(outdir,"DIVAndNN_$(sname)_interp.nc")
 create_nc_results(outname, gridlon, gridlat, value_analysis, sname;
                   varname = "probability", long_name="occurance probability");
 
-paramname = joinpath(outdir,"DIVAndNN_$(sname)_interp.json")
 
 open(paramname,"w") do f
     write(f,JSON.json(
@@ -319,6 +351,11 @@ open(paramname,"w") do f
             "niter" =>            niter,
             "learning_rate" =>    learning_rate,
             "NLayers" =>    NLayers,
+            "name" =>    sname,
+            "loss_iter" => loss_iter,
+            "val_iter" => val_iter,
         )
     ))
+end
+
 end

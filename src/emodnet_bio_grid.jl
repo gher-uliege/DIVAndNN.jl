@@ -36,5 +36,11 @@ ndimensions = 2
 # https://doi.org/10.12770/6c9e755f-14a3-48be-95d5-944441f62b5f
 
 data_TS = [
-    (expanduser("~/Downloads/SDC_NS_CLIM_S_1955_2014_0125_a.4Danl.nc"),"Salinity"),
-    (expanduser("~/Downloads/SDC_NS_CLIM_T_1955_2014_0125_a.4Danl.nc"),"Temperature")]
+#    (joinpath(datadir,"tmp","SDC_NS_CLIM_S_1955_2014_0125_a.4Danl.nc"),"Salinity"),
+#    (joinpath(datadir,"tmp","SDC_NS_CLIM_T_1955_2014_0125_a.4Danl.nc"),"Temperature"),
+    (joinpath(datadir,"tmp","Water_body_nitrogen_combined_V1.nc"),"nitrogen"),
+    (joinpath(datadir,"tmp","Water_body_silicate_combined_V1.nc"),"silicate"),
+    (joinpath(datadir,"tmp","Water_body_phosphate_combined_V1.nc"),"phosphate"),
+
+
+]

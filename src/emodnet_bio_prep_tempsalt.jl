@@ -4,29 +4,44 @@ import DIVAnd
 using NCDatasets
 using Missings
 using Interpolations
-
+using Base.Threads
 
 include("emodnet_bio_grid.jl");
 
 
 for (fname,varname) in data_TS
-
+    @show fname
     ds = Dataset(fname)
-    S = ds[varname][:,:,end,:];
+    k_index = 1
+    S = ds[varname][:,:,k_index,:];
     lon = nomissing(ds["lon"][:])
     lat = nomissing(ds["lat"][:])
     SS = nomissing(S,NaN);
     close(ds)
 
+    @info "skip time instance without data"
+    mask = .!isnan.(SS);
+    count = sum(sum(mask,dims=1),dims=2)[:]
+    n = findall(count .> 0)
+    SS = SS[:,:,n]
+    mask = mask[:,:,n]
 
-    SS = DIVAnd.ufill(SS,.!isnan.(SS))
-
+    @info "fill"
+    SS = DIVAnd.ufill(SS,mask)
+#=    Threads.@threads for k = 1:size(mask,3)
+        @show k
+        SS[:,:,k] = DIVAnd.ufill(SS[:,:,k],mask[:,:,k])
+    end
+=#
+    @info "average"
     SS2 = mean(SS,dims = 3)[:,:,1]
 
 
+    @info "interpolate"
     itp = interpolate((lon,lat), SS2, Gridded(Linear()));
     SSi = itp(gridlon,gridlat);
 
+    @show extrema(SSi)
     fname = joinpath(datadir,"$(lowercase(varname)).nc")
 
     ds = Dataset(fname,"c")

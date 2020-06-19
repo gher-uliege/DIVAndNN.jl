@@ -16,6 +16,8 @@ using Random
 using Statistics
 using Base.Threads
 using LinearAlgebra
+using DIVAndNN
+
 
 BLAS.set_num_threads(1)
 
@@ -23,11 +25,7 @@ BLAS.set_num_threads(1)
 include(expanduser("~/src/EMODnet-Biology-Interpolated-Maps/scripts/validate_probability.jl"))
 include(expanduser("~/src/EMODnet-Biology-Interpolated-Maps/scripts/PhytoInterp.jl"))
 
-include("DIVAnd_covar.jl")
-include("emodnet_bio_loadobs.jl")
 include("emodnet_bio_grid.jl")
-
-
 
 Random.seed!(1234)
 
@@ -61,10 +59,10 @@ covars_const = true
 covars_fname = [
     ("bathymetry.nc","batymetry",identity),
     #            ("dist2coast_subset.nc","distance",identity),
-                #("Chlorophyll/chloro_reinterp.nc","chla",identity),
-                #("oxygen_reinterp2.nc","oxygen",identity),
-#                ("salinity.nc","salinity",log),
-#               ("temperature.nc","temperature",identity),
+    #("Chlorophyll/chloro_reinterp.nc","chla",identity),
+    #("oxygen_reinterp2.nc","oxygen",identity),
+    #                ("salinity.nc","salinity",log),
+    #               ("temperature.nc","temperature",identity),
     ("nitrogen.nc",      "nitrogen",identity),
     ("phosphate.nc",     "phosphate",identity),
     ("silicate.nc",      "silicate",identity),
@@ -89,7 +87,6 @@ for i = 1:length(covars_fname)
     (fname,varname,trans) = covars_fname[i]
 
     Dataset(joinpath(datadir,fname)) do ds
-        global tmp
         tmp = nomissing(ds[varname][:],NaN)
         tmp = trans.(tmp)
         if ndimensions == 3
@@ -153,11 +150,8 @@ for n = 1:size(field,ndimensions+1)
 end
 
 
-#fname = Format2018(joinpath(datadir,"balticZooplankton.csv"))
-#fname = Format2020("/home/abarth/src/EMODnet-Biology-Interpolated-Maps/analysis/data/Biddulphia_sinensis1995-2020.csv")
-
-data_analysis = Format2020("/home/abarth/tmp/Emodnet-Bio2020/CSV-split","analysis")
-data_validation = Format2020("/home/abarth/tmp/Emodnet-Bio2020/CSV-split","validation")
+data_analysis = DIVAndNN.Format2020("/home/abarth/tmp/Emodnet-Bio2020/CSV-split","analysis")
+data_validation = DIVAndNN.Format2020("/home/abarth/tmp/Emodnet-Bio2020/CSV-split","validation")
 
 
 scientificname_accepted = listnames(data_analysis);
@@ -219,191 +213,132 @@ len = 150e3
 #len = 30e3
 #len = 20e3
 
-outdir = joinpath(datadir,"Results","emodnet-bio-2020")
-outdir = joinpath(datadir,"Results","emodnet-bio-2020-nocovar-epsilon2ap$(epsilon2ap)-len$(len)")
-outdir = joinpath(datadir,"Results","emodnet-bio-2020-ncovars$(length(covars_fname))-epsilon2ap$(epsilon2ap)-len$(len)-niter$(niter)-nlayers$(length(NLayers))")
-mkpath(outdir)
+for len = [75e3, 100e3, 125e3, 150e3]
+    for epsilon2ap = [0.5, 1, 5, 10]
 
-nameindex = parse(Int,get(ENV,"INDEX","1"))
+        outdir = joinpath(datadir,"Results","emodnet-bio-2020-ncovars$(length(covars_fname))-epsilon2ap$(epsilon2ap)-len$(len)-niter$(niter)-nlayers$(length(NLayers))")
+        mkpath(outdir)
 
-#Threads.@threads for nameindex in 1:length(scientificname_accepted)
-for nameindex in 1:length(scientificname_accepted)
+        nameindex = parse(Int,get(ENV,"INDEX","1"))
 
-sname = String(scientificname_accepted[nameindex])
-#sname = "Lithodesmium undulatum"
-#sname = "Asterionella kariana"
+        #Threads.@threads for nameindex in 1:length(scientificname_accepted)
+        for nameindex in 1:length(scientificname_accepted)
 
-paramname = joinpath(outdir,"DIVAndNN_$(sname)_interp.json")
+            sname = String(scientificname_accepted[nameindex])
+            #sname = "Lithodesmium undulatum"
+            #sname = "Asterionella kariana"
+            global loss_iter
+            global val_iter
+            @info sname
 
-#if isfile(paramname)
-#    continue
-#end
+            paramname = joinpath(outdir,"DIVAndNN_$(sname)_interp.json")
 
+            if isfile(paramname)
+                continue
+            end
 
-@info sname
-lon_a,lat_a,obstime_a,value_a,ids_a = loadbyname(data_analysis,years,sname)
-lon_cv,lat_cv,obstime_cv,value_cv,ids_cv = loadbyname(data_validation,years,sname)
+            lon_a,lat_a,obstime_a,value_a,ids_a = loadbyname(data_analysis,years,sname)
+            lon_cv,lat_cv,obstime_cv,value_cv,ids_cv = loadbyname(data_validation,years,sname)
 
-#time = Float64.(Dates.year.(obstime_a))
+            #time = Float64.(Dates.year.(obstime_a))
 
+            @show value_a[1:min(end,10)]
+            @show length(value_a)
 
-@show value_a[1:min(end,10)]
-@show length(value_a)
+            Random.seed!(1234)
 
-#=
-sum(sel)
-plot(lon[sel],lat[sel])
-plot(lon[sel],lat[sel],"o")
+            value_analysis = zeros(size(mask))
 
+            xobs_a = if ndimensions == 3
+                (lon_a,lat_a,time_a)
+            else
+                (lon_a,lat_a)
+            end
 
+            lenxy = if ndimensions == 3
+                (len,len,lent)
+            else
+                (len,len)
+            end
 
-clf();
+            loss_iter = []
+            val_iter = []
 
-scatter(lon[sel],lat[sel],10,value[sel]; cmap = "jet"); colorbar()
-=#
+            #value_a[(lon_a .< 4) .& (lat_a .< 52)] .= 1.
+            #value_a .= 1
+            function plotres(i,lossi,value_analysis,y)
+                vp = validate_probability((gridlon,gridlat),value_analysis,(lon_cv,lat_cv),value_cv)
+                push!(loss_iter,lossi)
+                push!(val_iter,vp)
+	            @printf("| %10d | %30.5f | %30.5f |\n",i,lossi,vp)
+            end
 
+            value_analysis[:],fw0 = DIVAndNN.analysisprob(
+                mask,pmn,xyi,xobs_a,
+                value_a,
+                lenxy,epsilon2ap,
+                field,
+                NLayers,
+                costfun = DIVAndNN.nll,
+                niter = niter,
+                dropoutprob = dropoutprob,
+                L2reg = L2reg,
+                learning_rate = learning_rate,
+	            plotres = plotres,
+	            plotevery = 100,
+                rmaverage = true,
+                trainfrac = trainfrac,
+            )
 
-#trans,invtrans = DIVAnd.Anam.loglin(Inf, epsilon = 1);
-#trans,invtrans = DIVAnd.Anam.notransform();
+            vp = validate_probability((gridlon,gridlat),value_analysis,(lon_cv,lat_cv),value_cv)
+            @show vp
 
+            outname = joinpath(outdir,"DIVAndNN_$(sname)_interp.nc")
 
+            create_nc_results(outname, gridlon, gridlat, value_analysis, sname;
+                              varname = "probability", long_name="occurance probability");
 
-#=
-epsilon2 = 0.5
-trans_value = trans.(value)
-mvalue = mean(trans_value)
-nsamp = 0
-varbak,len,dbinfo = DIVAnd.fitlen(
-(lon,lat),trans_value,nsamp;
-distfun = DIVAnd.distfun_m)
+            open(paramname,"w") do f
+                write(f,JSON.json(
+                    Dict(
+                        "validation" => vp,
+                        "L2reg" =>            L2reg,
+                        "dropoutprob" =>      dropoutprob,
+                        "epsilon2ap" =>       epsilon2ap,
+                        "len" =>              len,
+                        "niter" =>            niter,
+                        "learning_rate" =>    learning_rate,
+                        "NLayers" =>    NLayers,
+                        "name" =>    sname,
+                        "loss_iter" => loss_iter,
+                        "val_iter" => val_iter,
+                        "covars" => first.(covars_fname),
+                    )
+                ))
+            end
 
-trans_value = trans.(value)
-mvalue = mean(trans_value)
+        end
 
-f = trans_value .- mvalue
+        score = DIVAndNN.summary(outdir)
 
-bestfactorl,bestfactore, cvval,cvvalues, x2Ddata,y2Ddata,cvinter,xi2D,yi2D =
-DIVAnd.DIVAnd_cv(mask[:,:,1],(pm[:,:,1],pn[:,:,1]),(xi[:,:,1],yi[:,:,1]),(lon,lat),f,len,epsilon2,2,3,0);
+        paramname2 = joinpath(outdir,"DIVAndNN.json")
 
-#@warn "fix bestfactore"
-#bestfactore = 0.2438612845535494
-
-epsilon2 = epsilon2 * bestfactore
-=#
-
-
-Random.seed!(1234)
-
-#@show len
-#@show epsilon2
-#@show bestfactore
-
-value_analysis = zeros(size(mask))
-
-
-xobs_a = if ndimensions == 3
-    (lon_a,lat_a,time_a)
-else
-    (lon_a,lat_a)
-end
-
-lenxy = if ndimensions == 3
-    (len,len,lent)
-else
-    (len,len)
-end
-
-loss_iter = []
-val_iter = []
-function plotres(i,lossi,value_analysis,y)
-
-    vp = validate_probability((gridlon,gridlat),value_analysis,(lon_cv,lat_cv),value_cv)
-    push!(loss_iter,lossi)
-    push!(val_iter,vp)
-	@printf("| %10d | %30.5f | %30.5f | %30.5f |\n",i,lossi,vp,0.)
-end
-
-#value_a[(lon_a .< 4) .& (lat_a .< 52)] .= 1.
-#value_a .= 1
-
-value_analysis[:],fw0 = analysisprob(
-    mask,pmn,xyi,xobs_a,
-    value_a,
-    lenxy,epsilon2ap,
-    field,
-    NLayers,
-    costfun = nll,
-    niter = niter,
-    dropoutprob = dropoutprob,
-    L2reg = L2reg,
-    learning_rate = learning_rate,
-	plotres = plotres,
-	plotevery = 100,
-    rmaverage = true,
-    trainfrac = trainfrac,
-)
-
-#value_analysis .= invtrans.(stdf * value_analysis .+ mvalue)
-#value_analysis[value_analysis .< 0] .= 0
-
-#RMS_diva_covar[l] = validate((gridlon,gridlat,years),value_analysis,
-#		           (lon_cv,lat_cv,time_cv),value_cv)
-
-#return value_analysis,RMS_diva,value_analysis,RMS_diva_covar
-
-#end
-
-#=
-
-@show mean(RMS_diva), mean(RMS_diva_covar)
-@show 1 - mean(RMS_diva_covar)^2/mean(RMS_diva)^2
-
-
-ncvarattrib = Dict("long_name" => "abundance of $(sname)",
-"units" => "1/m2",
-"comments" => "number per m2"
-)
-
-outname = joinpath(outdir,"DIVAnd-analysis-$(sname).nc")
-DIVAnd.save(outname,(gridlon,gridlat,DateTime.(years,1,1)),value_analysis,"abundance";
-relerr = cpme, ncvarattrib = ncvarattrib)
-
-
-outname = joinpath(outdir,"DIVAndNN-analysis-$(sname).nc")
-DIVAnd.save(outname,(gridlon,gridlat,DateTime.(years,1,1)),value_analysis,"abundance";
-relerr = cpme, ncvarattrib = ncvarattrib)
-
-=#
-
-
-#end
-
-vp = validate_probability((gridlon,gridlat),value_analysis,(lon_cv,lat_cv),value_cv)
-@show vp
-
-outname = joinpath(outdir,"DIVAndNN_$(sname)_interp.nc")
-
-create_nc_results(outname, gridlon, gridlat, value_analysis, sname;
-                  varname = "probability", long_name="occurance probability");
-
-
-open(paramname,"w") do f
-    write(f,JSON.json(
-        Dict(
-            "validation" => vp,
-            "L2reg" =>            L2reg,
-            "dropoutprob" =>      dropoutprob,
-            "epsilon2ap" =>       epsilon2ap,
-            "len" =>              len,
-            "niter" =>            niter,
-            "learning_rate" =>    learning_rate,
-            "NLayers" =>    NLayers,
-            "name" =>    sname,
-            "loss_iter" => loss_iter,
-            "val_iter" => val_iter,
-            "covars" => first.(covars_fname),
-        )
-    ))
-end
-
+        open(paramname2,"w") do f
+            write(f,JSON.json(
+                Dict(
+                    "validation" => score,
+                    "L2reg" =>            L2reg,
+                    "dropoutprob" =>      dropoutprob,
+                    "epsilon2ap" =>       epsilon2ap,
+                    "len" =>              len,
+                    "niter" =>            niter,
+                    "learning_rate" =>    learning_rate,
+                    "NLayers" =>    NLayers,
+                    "loss_iter" => loss_iter,
+                    "val_iter" => val_iter,
+                    "covars" => first.(covars_fname),
+                )
+            ))
+        end
+    end
 end

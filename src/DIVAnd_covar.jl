@@ -27,9 +27,7 @@ end
 J = -\frac{1}{m} \sum_i y_i log(p_i) + (1 - y_i) log(1 - p_i)
 =#
 function J(y,HP)
-    #@show extrema(y),extrema(HP)
     J = -sum(y .* log.(HP)  + (1 .- y) .* log.(1 .- HP)) / length(y)
-    #@show J
     return J
 end
 
@@ -79,8 +77,9 @@ end
 
 
 function regression(field_test,H,y,epsilon2)
+    J = sum(abs2,H*field_test - y)/epsilon2
     #@show size(H),size(field_test)
-    return sum(abs2,H*field_test - y)/epsilon2
+    return J
 end
 
 # likelyhood assuming weight_test is correct
@@ -111,12 +110,12 @@ end
 
 
 
-function background(iB,field_test)
-    return field_test' * iB * field_test
+function background(iB,field_test,field_background)
+    return (field_test - field_background)' * iB * (field_test - field_background)
 end
 
-function ∇background(iB,field_test)
-    return 2 * (iB * field_test)
+function ∇background(iB,field_test,field_background)
+    return 2 * (iB * (field_test - field_background))
 end
 
 
@@ -130,7 +129,6 @@ function loss_obs(iB,fieldp,H,y,fw,costfun,epsilon2,dropoutprob,L2reg = 0)
     #@show extrema(field_test)
 
     J = costfun(field_test,H,y,epsilon2)
-    #@show J
 
     if L2reg != 0
         for i = 1:length(w)
@@ -140,8 +138,11 @@ function loss_obs(iB,fieldp,H,y,fw,costfun,epsilon2,dropoutprob,L2reg = 0)
     return J
 end
 
-function loss(iB,fieldp,H,y,fw,costfun,epsilon2,dropoutprob = 0,L2reg = 0)
-    J = loss_obs(iB,fieldp,H,y,fw,costfun,epsilon2,dropoutprob,L2reg) + background(iB,fw[end][:,1])
+function loss(iB,fieldp,H,y,fw,costfun,epsilon2,field_background,dropoutprob = 0,L2reg = 0)
+    Jobs = loss_obs(iB,fieldp,H,y,fw,costfun,epsilon2,dropoutprob,L2reg)
+    Jbackground = background(iB,fw[end][:,1],field_background)
+
+    J = Jobs + Jbackground
     return J
 end
 
@@ -149,12 +150,13 @@ end
 grad_loss_obs = Knet.grad(loss_obs,5)
 
 
-function grad_loss(iB,fieldp,H,y,fw,costfun,epsilon2,dropoutprob=0,L2reg = 0)
+function grad_loss(iB,fieldp,H,y,fw,costfun,epsilon2,field_background,dropoutprob=0,L2reg = 0)
     w = fw[1:end-1]
     fieldb = fw[end]
 
     δfw = grad_loss_obs(iB,fieldp,H,y,fw,costfun,epsilon2,dropoutprob,L2reg)
-    δfw[end] += ∇background(iB,fieldb[:,1])
+
+    δfw[end] += ∇background(iB,fieldb[:,1],field_background)
     return δfw
 
     #δfw2 = vcat(δfw[1:end-1],[δfw[end] + ∇background(iB,fieldb[:,1])])
@@ -234,7 +236,7 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
 
     iB = s.iB
 
-    @show extrema(iB*ones(size(iB,1)))
+    #@show extrema(iB*ones(size(iB,1)))
 
     # observation operator
     HI = DIVAnd.localize_separable_grid(obspos,mask,xyi);
@@ -253,52 +255,27 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
     weight_bias_test = weightbias(NLayers)
     #weight_bias_test = weightbias(NLayers, (sz...) -> randn(sz...)/100)
 
-    #field_test = DIVAnd.random(mask,pmn,len,1)[:,:,:,1][mask][:,1:1]
-    field_test = zeros(sv.n,1)
+    field_test = DIVAnd.random(mask,pmn,len,1)[:,:,1][mask][:,1:1]
+    #field_test = zeros(sv.n,1)
+    #figure();pcolor(DIVAnd.unpack(sv,field_test[:,1])[1])
 
     fw0 = deepcopy([weight_bias_test..., field_test])
 
-    # @show size(fw0[end])
-    # @show loss(iB,fieldp,H,y,fw0,costfun,epsilon2,dropoutprob,L2reg)
-
     optim = Knet.optimizers(fw0, Knet.Adam; lr = learning_rate)
-    #optim = Knet.optimizers(fw0, Knet.Sgd; lr = learning_rate)
-    t0 = now()
-
-    #fi,s2 = DIVAnd.DIVAndrun(mask,pmn,xyi,obspos,y,len,epsilon2; alphabc = 0)
-    #=
-    # @show sum(s2.obsout)
-    x = fw0[end]
-    gradloss = grad_loss(iB,fieldp,H,y,fw0,costfun,epsilon2,dropoutprob,L2reg)
-    gradloss2 = 2* s2.H' * (s2.R \ (s2.H*x - y)) + 2 * s2.iB * x
-    @show gradloss[end][1:10]
-    @show gradloss2[1:10]
-    @show maximum(abs.(gradloss2 - gradloss[end]))
-=#
-    # @show gradloss[1:end-1]
-
-    #=
-    fw0[end] = fi[mask][:,1:1]
-    x = fw0[end]
-    gradloss = grad_loss(iB,fieldp,H,y,fw0,costfun,epsilon2,dropoutprob,L2reg)
-    gradloss2 = 2* s2.H' * (s2.R \ (s2.H*x - y)) + 2 * s2.iB * x
-    @show gradloss[end][1:10]
-    @show gradloss2[1:10]
-    @show maximum(abs.(gradloss2 - gradloss[end]))
-    =#
 
     # DIVAnd analysis as a first guess
     meany = mean(y)
     if rmaverage
+        field_background = fill(meany,sv.n)
         ya = y .- meany
     else
+        field_background = fill(0.,sv.n)
         ya = y
     end
+
     fi,s2 = DIVAnd.DIVAndrun(mask,pmn,xyi,obspos,ya,len,epsilon2_background;
                              alpha = alpha,
                              alphabc = 0)
-    #debug
-    #fi .= 0
     if rmaverage
         fi = fi .+ meany
     end
@@ -308,22 +285,16 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
         fi = logit.(clamp.(fi,eps,1-eps))
     end
 
-    @show extrema(fi[mask])
-    @show extrema(logistic.(fi[mask]))
-    #@show size.(weight_bias_test)
     weight_bias_test = weightbias(NLayers,sz -> 0.0001*randn(sz));
-    #@show size.(weight_bias_test)
-    #@show size.(fw0)
     fw0 = deepcopy([weight_bias_test..., fi[mask][:,1:1]])
 
     #@show size.(fw0)
 
     for i = 1:niter
-        #iobssel = rand(Float64,size(y)) .< trainfrac
-        iobssel = rand(Float64,size(y)) .<= 1
+        iobssel = rand(Float64,size(y)) .<= trainfrac
 
-        #gradloss = grad_loss(iB,fieldp,H,y,fw0,costfun,epsilon2,dropoutprob,L2reg)
-        gradloss = grad_loss(iB,fieldp,H[iobssel,:],y[iobssel],fw0,costfun,epsilon2,dropoutprob,L2reg)
+        gradloss = grad_loss(iB,fieldp,H[iobssel,:],y[iobssel],fw0,costfun,
+                             epsilon2,field_background,dropoutprob,L2reg)
 
         if ((i-1) % plotevery == 0) && (plotevery != -1)
             prob_estim = model_field(fieldp,fw0,0)
@@ -332,7 +303,7 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
 
             #@show extrema(fieldp),extrema(y)
             #@show extrema.(fw0)
-            lossi = loss(iB,fieldp,H,y,fw0,costfun,epsilon2,0,L2reg)
+            lossi = loss(iB,fieldp,H,y,fw0,costfun,epsilon2,field_background,0,L2reg)
             #@show i,lossi
             if costfun == nll
                 plotres(i-1,lossi,logistic.(prob_estim),y,gradloss,out,iobssel,obspos)
@@ -348,29 +319,8 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
             clamp!(gl,-maxgrad,maxgrad)
             #@show i,extrema(gl),size(gl)
         end
-        #=
-        @show gradloss[end][1:10]
-        @show maximum(gradloss[end])
 
-        x = fw0[end]
-        gradloss2 = [2* s2.H' * (s2.R \ (s2.H*x - y)) + 2 * s2.iB * x]
-        @show gradloss2[end][1:10]
-        @show maximum(gradloss2[end])
-        =#
-
-        #lossi0 = loss(iB,fieldp,H,y,fw0,costfun,epsilon2,0,L2reg)
-        #@show lossi0
         update!(fw0, gradloss, optim)
-        #lossi1 = loss(iB,fieldp,H,y,fw0,costfun,epsilon2,0,L2reg)
-        #@show lossi1
-        #@show lossi1 - lossi0
-        #@show lossi0,lossi1,lossi1 - lossi0
-        #error("ll")
-        if (now() - t0) > Dates.Second(3)
-            #@show i,loss(iB,fieldp,H,y,fw0,costfun,epsilon2,0,L2reg)
-            t0 = now()
-        end
-
     end
 
     #@show maximum(abs.(fi[mask] - fw0[end]))

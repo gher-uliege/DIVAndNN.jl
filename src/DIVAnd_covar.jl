@@ -250,18 +250,7 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
     H = H[.!out,:]
     obspos = map(p -> p[.!out],obspos)
 
-    # random initial weighs and baises with the
-    # appropriate size
-    weight_bias_test = weightbias(NLayers)
-    #weight_bias_test = weightbias(NLayers, (sz...) -> randn(sz...)/100)
 
-    field_test = DIVAnd.random(mask,pmn,len,1)[:,:,1][mask][:,1:1]
-    #field_test = zeros(sv.n,1)
-    #figure();pcolor(DIVAnd.unpack(sv,field_test[:,1])[1])
-
-    fw0 = deepcopy([weight_bias_test..., field_test])
-
-    optim = Knet.optimizers(fw0, Knet.Adam; lr = learning_rate)
 
     # DIVAnd analysis as a first guess
     meany = mean(y)
@@ -285,8 +274,11 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
         fi = logit.(clamp.(fi,eps,1-eps))
     end
 
+    # random initial weighs and baises with the
+    # appropriate size
     weight_bias_test = weightbias(NLayers,sz -> 0.0001*randn(sz));
     fw0 = deepcopy([weight_bias_test..., fi[mask][:,1:1]])
+    optim = Knet.optimizers(fw0, Knet.Adam; lr = learning_rate)
 
     #@show size.(fw0)
 

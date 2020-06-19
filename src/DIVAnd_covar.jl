@@ -156,6 +156,9 @@ function grad_loss(iB,fieldp,H,y,fw,costfun,epsilon2,dropoutprob=0,L2reg = 0)
     δfw = grad_loss_obs(iB,fieldp,H,y,fw,costfun,epsilon2,dropoutprob,L2reg)
     δfw[end] += ∇background(iB,fieldb[:,1])
     return δfw
+
+    #δfw2 = vcat(δfw[1:end-1],[δfw[end] + ∇background(iB,fieldb[:,1])])
+    #return δfw2
 end
 
 function sampleobs(Nobs,xyi,prob)
@@ -212,13 +215,14 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
                       maxgrad = 5000.,
                       rmaverage = false,
                       trainfrac = 0.1,
+                      epsilon2_background = 0.1,
                       )
 
     sv = DIVAnd.statevector((mask,));
     fieldp = DIVAnd.packens(sv,(field,))
 
     alpha = Float64[]
-    alpha = Float64[0,2,1]
+    #alpha = Float64[0,2,1]
     moddim = Float64[]
     btrunc = []
     scale_len = true
@@ -290,7 +294,11 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
     else
         ya = y
     end
-    fi,s2 = DIVAnd.DIVAndrun(mask,pmn,xyi,obspos,ya,len,epsilon2; alphabc = 0)
+    fi,s2 = DIVAnd.DIVAndrun(mask,pmn,xyi,obspos,ya,len,epsilon2_background;
+                             alpha = alpha,
+                             alphabc = 0)
+    #debug
+    #fi .= 0
     if rmaverage
         fi = fi .+ meany
     end
@@ -311,8 +319,11 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
     #@show size.(fw0)
 
     for i = 1:niter
-        iobssel = rand(Float64,size(y)) .< trainfrac
-        #iobssel = rand(Float64,size(y)) .< 1
+        #iobssel = rand(Float64,size(y)) .< trainfrac
+        iobssel = rand(Float64,size(y)) .<= 1
+
+        #gradloss = grad_loss(iB,fieldp,H,y,fw0,costfun,epsilon2,dropoutprob,L2reg)
+        gradloss = grad_loss(iB,fieldp,H[iobssel,:],y[iobssel],fw0,costfun,epsilon2,dropoutprob,L2reg)
 
         if ((i-1) % plotevery == 0) && (plotevery != -1)
             prob_estim = model_field(fieldp,fw0,0)
@@ -324,15 +335,13 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
             lossi = loss(iB,fieldp,H,y,fw0,costfun,epsilon2,0,L2reg)
             #@show i,lossi
             if costfun == nll
-                plotres(i-1,lossi,logistic.(prob_estim),y)
+                plotres(i-1,lossi,logistic.(prob_estim),y,gradloss,out,iobssel,obspos)
             else
-                plotres(i-1,lossi,prob_estim,y)
+                plotres(i-1,lossi,prob_estim,y,gradloss,out,iobssel,obspos)
             end
         end
 
 
-        #gradloss = grad_loss(iB,fieldp,H,y,fw0,costfun,epsilon2,dropoutprob,L2reg)
-        gradloss = grad_loss(iB,fieldp,H[iobssel,:],y[iobssel],fw0,costfun,epsilon2,dropoutprob,L2reg)
 
         for (i,gl) in enumerate(gradloss)
             #@show i,extrema(gl),size(gl)

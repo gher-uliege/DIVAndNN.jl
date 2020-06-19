@@ -33,6 +33,7 @@ function plotanalysis(fname)
     lon_a,lat_a,obstime_a,value_a,ids_a = loadbyname(data_analysis,years,sname)
     lon_cv,lat_cv,obstime_cv,value_cv,ids_cv = loadbyname(data_validation,years,sname)
 
+    #value_a[(lon_a .< 4) .& (lat_a .< 52)] .= 1.
 
     XY = DIVAnd.ndgrid(gridlon,gridlat)
 
@@ -42,7 +43,7 @@ function plotanalysis(fname)
     all_data = vcat(value_analysis[:],mv_a[:],mv_cv[:])
 
     cmap = PyPlot.cm.hot_r
-    cmap = PyPlot.cm.plasma
+    #cmap = PyPlot.cm.plasma
     orientation = "horizontal"
 
     function decoration()
@@ -69,7 +70,6 @@ function plotanalysis(fname)
     end
 
 
-    fig = figure(figsize = (7,7))
     fig.suptitle(sname,style="italic")
 
     subplot(2,2,1);
@@ -97,7 +97,7 @@ function plotanalysis(fname)
     subplot(2,2,3);
     obsplot(mv_cv,"(c) Validation data",cl_prop)
 
-    figname = replace(fname,".nc" => ".png")
+    figname = replace(fname,".nc" => "2.png")
     @show figname
     savefig(figname)
 end
@@ -108,10 +108,13 @@ end
 
 #fname = expanduser("~/tmp/Emodnet-Bio2020/Results/emodnet-bio-2020/DIVAndNN_Actinocyclus_interp.nc")
 
+
+fig = figure(figsize = (7,7))
 #@sync @distributed for fname in glob("*nc",outdir)
 for fname in glob("*nc",outdir)
 #for fname in glob("*nc",outdir)[1:1]
-    close("all")
+    clf();
+    #close("all")
     @info(fname)
     plotanalysis(fname)
 end

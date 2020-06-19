@@ -4,7 +4,7 @@ using Test
 using Dates
 using Dates: now
 using Random
-
+using Statistics
 using Knet
 
 logistic(x) = 1 / (1 + exp(-x))
@@ -63,7 +63,7 @@ function model_field(fieldp,fw, dropoutprob = 0.)
     if length(w) > 0
         field_test = fieldp
 
-        for i = 1:2:length(w)-2
+        for i = 1:2:(length(w)-2)
             field_test = relu.((field_test * w[i] .+ w[i+1]))
             Knet.dropout(field_test, dropoutprob)
         end
@@ -124,6 +124,7 @@ function loss_obs(iB,fieldp,H,y,fw,costfun,epsilon2,dropoutprob,L2reg = 0)
     w = fw[1:end-1]
     fieldb = fw[end]
 
+    #@show dropoutprob
     field_test = model_field(fieldp,fw,dropoutprob)
     ##@show size(fieldp),size(field_test)
     #@show extrema(field_test)
@@ -208,13 +209,16 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
                       dropoutprob = 0.,
                       L2reg = 0,
                       learning_rate = 0.01,
-                      maxgrad = 1.,
+                      maxgrad = 5000.,
+                      rmaverage = false,
+                      trainfrac = 0.1,
                       )
 
     sv = DIVAnd.statevector((mask,));
     fieldp = DIVAnd.packens(sv,(field,))
 
     alpha = Float64[]
+    alpha = Float64[0,2,1]
     moddim = Float64[]
     btrunc = []
     scale_len = true
@@ -225,6 +229,8 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
         btrunc = btrunc);
 
     iB = s.iB
+
+    @show extrema(iB*ones(size(iB,1)))
 
     # observation operator
     HI = DIVAnd.localize_separable_grid(obspos,mask,xyi);
@@ -278,7 +284,24 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
     =#
 
     # DIVAnd analysis as a first guess
-    fi,s2 = DIVAnd.DIVAndrun(mask,pmn,xyi,obspos,y,len,epsilon2; alphabc = 0)
+    meany = mean(y)
+    if rmaverage
+        ya = y .- meany
+    else
+        ya = y
+    end
+    fi,s2 = DIVAnd.DIVAndrun(mask,pmn,xyi,obspos,ya,len,epsilon2; alphabc = 0)
+    if rmaverage
+        fi = fi .+ meany
+    end
+
+    if costfun == nll
+        eps = 0.0001
+        fi = logit.(clamp.(fi,eps,1-eps))
+    end
+
+    @show extrema(fi[mask])
+    @show extrema(logistic.(fi[mask]))
     #@show size.(weight_bias_test)
     weight_bias_test = weightbias(NLayers,sz -> 0.0001*randn(sz));
     #@show size.(weight_bias_test)
@@ -288,7 +311,7 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
     #@show size.(fw0)
 
     for i = 1:niter
-        iobssel = rand(Float64,size(y)) .< 0.1
+        iobssel = rand(Float64,size(y)) .< trainfrac
         #iobssel = rand(Float64,size(y)) .< 1
 
         if ((i-1) % plotevery == 0) && (plotevery != -1)

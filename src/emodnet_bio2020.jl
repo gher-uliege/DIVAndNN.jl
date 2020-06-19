@@ -69,6 +69,7 @@ covars_fname = [
     ("phosphate.nc",     "phosphate",identity),
     ("silicate.nc",      "silicate",identity),
 ]
+#covars_fname = []
 
 ncovars = length(covars_fname)
 
@@ -171,25 +172,26 @@ niter = 2000*100
 #niter = 400000 * 16
 #testing
 #niter = 10
-niter = 2000
-niter = 2000*2
-
+#niter = 2000
+#niter = 2000*20
+niter = 500
+trainfrac = 0.01
 #for l = 1:Ntries
 l=1
 
 
 #epsilon2ap = 1.5
 #epsilon2ap = 2
-#epsilon2ap = 5
+epsilon2ap = 5
 #epsilon2ap = 50
 #@show std(value)
 #epsilon2ap = epsilon2
 #epsilon2ap = 0.5
-epsilon2ap = 1.
-epsilon2ap = 0.01
+#epsilon2ap = 1.
+#epsilon2ap = 0.01
 #epsilon2ap = 0.1
 #epsilon2ap = 0.001
-epsilon2ap = 0.005
+#epsilon2ap = 0.005
 
 #NLayers = [size(field)[end],3,1]
 NLayers = [size(field)[end],4,1]
@@ -204,17 +206,22 @@ learning_rate = 0.00001
 learning_rate = 0.001
 L2reg = 0.0001
 dropoutprob = 0.01
-#dropoutprob = 0.1
+dropoutprob = 0.1
+dropoutprob = 0.6
 #dropoutprob = 0.99
 
 len = 50e3
 len = 50e3
+len = 80e3
+len = 100e3
+len = 120e3
+len = 150e3
 #len = 30e3
 #len = 20e3
 
 outdir = joinpath(datadir,"Results","emodnet-bio-2020")
 outdir = joinpath(datadir,"Results","emodnet-bio-2020-nocovar-epsilon2ap$(epsilon2ap)-len$(len)")
-outdir = joinpath(datadir,"Results","emodnet-bio-2020-ncovars$(length(covars_fname))-epsilon2ap$(epsilon2ap)-len$(len)-niter$(niter)")
+outdir = joinpath(datadir,"Results","emodnet-bio-2020-ncovars$(length(covars_fname))-epsilon2ap$(epsilon2ap)-len$(len)-niter$(niter)-nlayers$(length(NLayers))")
 mkpath(outdir)
 
 nameindex = parse(Int,get(ENV,"INDEX","1"))
@@ -224,7 +231,7 @@ for nameindex in 1:length(scientificname_accepted)
 
 sname = String(scientificname_accepted[nameindex])
 #sname = "Lithodesmium undulatum"
-
+#sname = "Asterionella kariana"
 
 paramname = joinpath(outdir,"DIVAndNN_$(sname)_interp.json")
 
@@ -316,6 +323,9 @@ function plotres(i,lossi,value_analysis,y)
 	@printf("| %10d | %30.5f | %30.5f | %30.5f |\n",i,lossi,vp,0.)
 end
 
+#value_a[(lon_a .< 4) .& (lat_a .< 52)] .= 1.
+#value_a .= 1
+
 value_analysis[:],fw0 = analysisprob(
     mask,pmn,xyi,xobs_a,
     value_a,
@@ -328,7 +338,9 @@ value_analysis[:],fw0 = analysisprob(
     L2reg = L2reg,
     learning_rate = learning_rate,
 	plotres = plotres,
-	plotevery = 100
+	plotevery = 100,
+    rmaverage = true,
+    trainfrac = trainfrac,
 )
 
 #value_analysis .= invtrans.(stdf * value_analysis .+ mvalue)

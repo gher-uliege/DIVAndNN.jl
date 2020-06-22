@@ -266,7 +266,7 @@ for len = [50e3, 75e3, 100e3, 125e3]
 
             #value_a[(lon_a .< 4) .& (lat_a .< 52)] .= 1.
             #value_a .= 1
-            function plotres(i,lossi,value_analysis,y)
+            function plotres(i,lossi,value_analysis,y,gradloss,out,iobssel,obspos)
                 vp = validate_probability((gridlon,gridlat),value_analysis,(lon_cv,lat_cv),value_cv)
                 push!(loss_iter,lossi)
                 push!(val_iter,vp)
@@ -334,8 +334,6 @@ for len = [50e3, 75e3, 100e3, 125e3]
                     "niter" =>            niter,
                     "learning_rate" =>    learning_rate,
                     "NLayers" =>    NLayers,
-                    "loss_iter" => loss_iter,
-                    "val_iter" => val_iter,
                     "covars" => first.(covars_fname),
                 )
             ))

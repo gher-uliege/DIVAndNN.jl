@@ -213,8 +213,8 @@ len = 150e3
 #len = 30e3
 #len = 20e3
 
-for len = [75e3, 100e3, 125e3, 150e3]
-    for epsilon2ap = [0.5, 1, 5, 10]
+for len = [50e3, 75e3, 100e3, 125e3]
+    for epsilon2ap = [1, 5, 10, 50, 100]
 
         outdir = joinpath(datadir,"Results","emodnet-bio-2020-ncovars$(length(covars_fname))-epsilon2ap$(epsilon2ap)-len$(len)-niter$(niter)-nlayers$(length(NLayers))")
         mkpath(outdir)

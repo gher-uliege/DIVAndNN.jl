@@ -224,7 +224,7 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
     fieldp = DIVAnd.packens(sv,(field,))
 
     alpha = Float64[]
-    #alpha = Float64[0,2,1]
+    alpha = Float64[0,2,1]
     moddim = Float64[]
     btrunc = []
     scale_len = true

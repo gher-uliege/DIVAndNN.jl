@@ -6,10 +6,19 @@ using Missings
 using Interpolations
 using Base.Threads
 
-include("emodnet_bio_grid.jl");
+#include("emodnet_bio_grid.jl");
+
+function prep_tempsalt(gridlon,gridlat,data_TS,datadir)
 
 
 for (fname,varname) in data_TS
+    interp_fname = joinpath(datadir,"$(lowercase(varname)).nc")
+
+    if isfile(interp_fname)
+        @info("$interp_fname is already interpolated")
+        continue
+    end
+
     @show fname
     ds = Dataset(fname)
     k_index = 1
@@ -42,9 +51,8 @@ for (fname,varname) in data_TS
     SSi = itp(gridlon,gridlat);
 
     @show extrema(SSi)
-    fname = joinpath(datadir,"$(lowercase(varname)).nc")
 
-    ds = Dataset(fname,"c")
+    ds = Dataset(interp_fname,"c")
     # Dimensions
 
     ds.dim["lon"] = length(gridlon)
@@ -76,5 +84,7 @@ for (fname,varname) in data_TS
 
     close(ds)
 
+
+end
 
 end

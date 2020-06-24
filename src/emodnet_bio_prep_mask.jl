@@ -2,12 +2,12 @@ using DIVAnd
 using Interpolations
 using NCDatasets
 
-include("emodnet_bio_grid.jl");
+function prep_mask(bathname,bathisglobal,gridlon,gridlat,years,maskname)
+
+#include("emodnet_bio_grid.jl");
 
 # land-sea mask and domain parameters
 
-bathname = joinpath(datadir,"gebco_30sec_4.nc");
-bathisglobal = true;
 mask2,(pm,pn,po),(xi,yi,zi) = DIVAnd.domain(bathname,bathisglobal,gridlon,gridlat,years);
 blon,blat,bath = DIVAnd.load_bath(bathname,bathisglobal,gridlon,gridlat);
 mask = (bath .>= 0);
@@ -28,9 +28,8 @@ mask = DIVAnd.floodfill(mask,CartesianIndex(50,10))
 label = DIVAnd.floodfill(mask)
 mask = label .== 1;
 
-fname = joinpath(datadir,"mask.nc")
 
-ds = Dataset(fname,"c")
+ds = Dataset(maskname,"c")
 # Dimensions
 
 ds.dim["lon"] = length(gridlon)
@@ -59,3 +58,5 @@ nclat[:] = blat
 ncmask[:] = mask
 
 close(ds)
+
+end

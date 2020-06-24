@@ -83,7 +83,7 @@ function loadbyname(df::Format2020,years,scientificname)
         return lonp, latp
     end
 
-    filelist = glob(scientificname * "-*." * df.type * ".csv",df.dirname)
+    filelist = glob(scientificname * "-*" * df.type * ".csv",df.dirname)
     @assert length(filelist) == 1
 
     fname = filelist[1]

@@ -207,7 +207,7 @@ function sampleobsfield(Nobs,xyi,field)
 end
 
 function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
-                      plotres = (i,prob,y) -> nothing,
+                      plotres = (i,prob,y,params...) -> nothing,
                       plotevery = -1,
                       niter::Int = 10000,
                       costfun = nll,

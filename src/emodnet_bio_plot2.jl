@@ -8,13 +8,13 @@ using Proj4
 using Dates
 using Statistics
 using DIVAnd
+using DIVAndNN
 using PyCall
 
 include("emodnet_bio_grid.jl")
-include("emodnet_bio_loadobs.jl")
 
-data_analysis = Format2020("/home/abarth/tmp/Emodnet-Bio2020/CSV-split","analysis")
-data_validation = Format2020("/home/abarth/tmp/Emodnet-Bio2020/CSV-split","validation")
+data_analysis = DIVAndNN.Format2020(expanduser("~/tmp/Emodnet-Bio2020/CSV-split"),"analysis")
+data_validation = DIVAndNN.Format2020(expanduser("~/tmp/Emodnet-Bio2020/CSV-split"),"validation")
 
 
 function pyo(a::Array{T,N}) where {T,N}
@@ -23,17 +23,13 @@ function pyo(a::Array{T,N}) where {T,N}
 end
 
 function plotanalysis(fname)
-
-
     ds = NCDataset(fname)
     value_analysis = nomissing(ds["probability"][:,:],NaN)
     sname = split(basename(fname),"_")[2]
     close(ds)
 
-    lon_a,lat_a,obstime_a,value_a,ids_a = loadbyname(data_analysis,years,sname)
-    lon_cv,lat_cv,obstime_cv,value_cv,ids_cv = loadbyname(data_validation,years,sname)
-
-    #value_a[(lon_a .< 4) .& (lat_a .< 52)] .= 1.
+    lon_a,lat_a,obstime_a,value_a,ids_a = DIVAndNN.loadbyname(data_analysis,years,sname)
+    lon_cv,lat_cv,obstime_cv,value_cv,ids_cv = DIVAndNN.loadbyname(data_validation,years,sname)
 
     XY = DIVAnd.ndgrid(gridlon,gridlat)
 
@@ -102,15 +98,10 @@ function plotanalysis(fname)
     savefig(figname)
 end
 
-#outdir = joinpath(datadir,"Results","emodnet-bio-2020")
-#outdir = joinpath(datadir,"Results","emodnet-bio-2020-nocovar")
-
-
-#fname = expanduser("~/tmp/Emodnet-Bio2020/Results/emodnet-bio-2020/DIVAndNN_Actinocyclus_interp.nc")
-
+# define
+# outdir = ...
 
 fig = figure(figsize = (7,7))
-#@sync @distributed for fname in glob("*nc",outdir)
 for fname in glob("*nc",outdir)
 #for fname in glob("*nc",outdir)[1:1]
     clf();

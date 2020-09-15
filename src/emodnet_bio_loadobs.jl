@@ -130,13 +130,17 @@ function binobs(xy,v,XY)
 
     for j in eachindex(v)
 
+        inbounds = true
         for i = 1:n
             ind[i] = round(Int,(xy[i][j] - xy0[i]) / dxy0[i]) + 1
+            inbounds = inbounds && (1 <= ind[i] <= sz[i])
         end
 
-        count[ind...] += 1
-        sumv[ind...] += v[j]
-        sumv2[ind...] += v[j]^2
+        if inbounds
+            count[ind...] += 1
+            sumv[ind...] += v[j]
+            sumv2[ind...] += v[j]^2
+        end
     end
 
     meanv = sumv./count

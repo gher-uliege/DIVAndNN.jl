@@ -92,10 +92,22 @@ function loadbyname(df::Format2020,years,scientificname)
 
     obstime = df.date
 
-    value = df.occurs
+    value =
+        if hasproperty(df, :occurs)
+            # Format in April 2020
+            df.occurs
+        else
+            # Format in June 2020
+            df.occurrence
+        end
 
     sel = (years[1] .<= Dates.year.(obstime)  .<= years[end]) .& (.!ismissing.(value))
-    ids = df.date_xUTM_yUTM
+    ids =
+        if hasproperty(df, :date_xUTM_yUTM)
+            df.date_xUTM_yUTM
+        else
+            df.eventid
+        end
 
     return lon[sel],lat[sel],obstime[sel],Float64.(value[sel]),ids[sel]
 end

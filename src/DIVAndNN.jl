@@ -17,6 +17,7 @@ include("emodnet_bio_prep_bath.jl")
 
 include("loadcovar.jl")
 include("normalize.jl")
+include("bestresults.jl")
 
 export listnames
 export loadbyname

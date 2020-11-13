@@ -206,6 +206,31 @@ function sampleobsfield(Nobs,xyi,field)
     return obspos,y
 end
 
+
+"""
+    prob_estim,fw0 = DIVAndNN.analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;...)
+
+The parameters `mask`,`pmn`,`xyi`,`obspos`,`y`,`len`,`epsilon2` are the same than for
+DIVAnd.DIVAndrun. `field` is an array of covariable with the same size of mask but with an extra dimension.
+For example if mask has the size 100x101 and if there are 3 co-variables, then field would have the size 100x101x3.
+`NLayers` is the number of layer in the neural network. `NLayers[1]` must be equal tot he number of co-variables
+and `NLayers[end]` must be 1.
+
+## Keyword parameters
+
+* `niter` (default 10000): number of iterations
+* `costfun` (default `nll`): `nll` for probabilities (between 0 and 1) and `regression` for unbounded variables
+* `dropoutprob` (default 0.): drop-out probability to avoid overfitting
+* `L2reg` (default 0): L2 regularization
+* `learning_rate` (default 0.01)
+* `maxgrad` (default 5000.): maximum gradient (in absolute values) to stabilize the learning
+* `rmaverage` (default false): remove average
+* `trainfrac` (default 0.1): fraction of training data
+* `epsilon2_background` (default 0.1): `epsilon2` parameter for initial analysis
+* `plotres`: is a function that is executed every `plotevery` times to minitor the convergence with the parameters:
+   `i`,`lossi`,`prob_estim`,`y`,`gradloss`,`out`,`iobssel`,`obspos`
+
+"""
 function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
                       plotres = (i,prob,y,params...) -> nothing,
                       plotevery = -1,

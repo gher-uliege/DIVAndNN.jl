@@ -32,8 +32,8 @@ value_analysis,fw0 = DIVAndNN.analysisprob(
     rmaverage = true,
 )
 
-@test minimum(value_analysis) ≈ 1/4 atol=1e-3
-@test maximum(value_analysis) ≈ 1/4 atol=1e-3
+@test minimum(value_analysis) ≈ 1/4 atol=2e-3
+@test maximum(value_analysis) ≈ 1/4 atol=2e-3
 
 
 

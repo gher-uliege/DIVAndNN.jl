@@ -14,6 +14,7 @@ end
 function normalize!(mask,field)
     for n = 1:size(field)[end]
         if ndims(field) == 4
+            tmp = field[:,:,:,n][mask]
             field[:,:,:,n] = (field[:,:,:,n] .- mean(tmp)) ./ std_or_1(tmp)
         else
             tmp = field[:,:,n][mask];

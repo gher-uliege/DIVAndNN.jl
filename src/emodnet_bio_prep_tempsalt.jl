@@ -8,44 +8,15 @@ using Base.Threads
 
 #include("emodnet_bio_grid.jl");
 
-function prep_tempsalt(gridlon,gridlat,data_TS,datadir)
+"""
+    DIVAndNN.saveinterp((lon,lat),field,(gridlon,gridlat),varname,interp_fname)
 
-
-for (fname,varname) in data_TS
-    interp_fname = joinpath(datadir,"$(lowercase(varname)).nc")
-
-    if isfile(interp_fname)
-        @info("$interp_fname is already interpolated")
-        continue
-    end
-
-    @show fname
-    ds = Dataset(fname)
-    k_index = 1
-    S = ds[varname][:,:,k_index,:];
-    lon = nomissing(ds["lon"][:])
-    lat = nomissing(ds["lat"][:])
-    SS = nomissing(S,NaN);
-    close(ds)
-
-    @info "skip time instance without data"
-    mask = .!isnan.(SS);
-    count = sum(sum(mask,dims=1),dims=2)[:]
-    n = findall(count .> 0)
-    SS = SS[:,:,n]
-    mask = mask[:,:,n]
-
-    @info "fill"
-    SS = DIVAnd.ufill(SS,mask)
-#=    Threads.@threads for k = 1:size(mask,3)
-        @show k
-        SS[:,:,k] = DIVAnd.ufill(SS[:,:,k],mask[:,:,k])
-    end
-=#
-    @info "average"
-    SS2 = mean(SS,dims = 3)[:,:,1]
-
-
+Interpolate the field `field` defined over the grid `(lon,lat)`
+on the grid `(gridlon,gridlat)`. The result is saved in the NetCDF files
+`interp_fname` under the same `varname`.
+`lon`, `lat`, `gridlon`, `gridlat` are all vectors.
+"""
+function saveinterp((lon,lat),SS2,(gridlon,gridlat),varname,interp_fname)
     @info "interpolate"
     itp = interpolate((lon,lat), SS2, Gridded(Linear()));
     SSi = itp(gridlon,gridlat);
@@ -83,8 +54,46 @@ for (fname,varname) in data_TS
     ncvar[:] = SSi
 
     close(ds)
+end
+
+function prep_tempsalt(gridlon,gridlat,data_TS,datadir)
 
 
+for (fname,varname) in data_TS
+    interp_fname = joinpath(datadir,"$(lowercase(varname)).nc")
+
+    if isfile(interp_fname)
+        @info("$interp_fname is already interpolated")
+        continue
+    end
+
+    @show fname
+    ds = Dataset(fname)
+    k_index = 1
+    S = ds[varname][:,:,k_index,:];
+    lon = nomissing(ds["lon"][:])
+    lat = nomissing(ds["lat"][:])
+    SS = nomissing(S,NaN);
+    close(ds)
+
+    @info "skip time instance without data"
+    mask = .!isnan.(SS);
+    count = sum(sum(mask,dims=1),dims=2)[:]
+    n = findall(count .> 0)
+    SS = SS[:,:,n]
+    mask = mask[:,:,n]
+
+    @info "fill"
+    SS = DIVAnd.ufill(SS,mask)
+#=    Threads.@threads for k = 1:size(mask,3)
+        @show k
+        SS[:,:,k] = DIVAnd.ufill(SS[:,:,k],mask[:,:,k])
+    end
+=#
+    @info "average"
+    SS2 = mean(SS,dims = 3)[:,:,1]
+
+    saveinterp((lon,lat),SS2,(gridlon,gridlat),interp_fname)
 end
 
 end

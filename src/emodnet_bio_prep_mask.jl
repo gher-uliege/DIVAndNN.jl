@@ -8,7 +8,7 @@ function prep_mask(bathname,bathisglobal,gridlon,gridlat,years,maskname)
 
 # land-sea mask and domain parameters
 
-mask2,(pm,pn,po),(xi,yi,zi) = DIVAnd.domain(bathname,bathisglobal,gridlon,gridlat,years);
+#mask2,(pm,pn,po),(xi,yi,zi) = DIVAnd.domain(bathname,bathisglobal,gridlon,gridlat,years);
 blon,blat,bath = DIVAnd.load_bath(bathname,bathisglobal,gridlon,gridlat);
 mask = (bath .>= 0);
 #mask[1:30,70:end] .= false;

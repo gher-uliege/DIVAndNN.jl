@@ -19,6 +19,8 @@ include("loadcovar.jl")
 include("normalize.jl")
 include("bestresults.jl")
 
+include("validation.jl")
+
 export listnames
 export loadbyname
 

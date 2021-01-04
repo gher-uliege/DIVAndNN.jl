@@ -14,6 +14,7 @@ include("emodnet_bio_summary.jl")
 include("emodnet_bio_prep_mask.jl")
 include("emodnet_bio_prep_tempsalt.jl")
 include("emodnet_bio_prep_bath.jl")
+include("emodnet_bio_prep_dist2coast.jl")
 
 include("loadcovar.jl")
 include("normalize.jl")

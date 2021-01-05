@@ -56,11 +56,11 @@ function saveinterp((lon,lat),SS2,(gridlon,gridlat),varname,interp_fname)
     close(ds)
 end
 
-function prep_tempsalt(gridlon,gridlat,data_TS,datadir)
+function prep_tempsalt(gridlon,gridlat,data_TS,datadir; k_index = 1)
 
 
-for (fname,varname) in data_TS
-    interp_fname = joinpath(datadir,"$(lowercase(varname)).nc")
+for (fname,varname,lvarname) in data_TS
+    interp_fname = joinpath(datadir,"$(lowercase(lvarname)).nc")
 
     if isfile(interp_fname)
         @info("$interp_fname is already interpolated")
@@ -69,10 +69,13 @@ for (fname,varname) in data_TS
 
     @show fname
     ds = Dataset(fname)
-    k_index = 1
     S = ds[varname][:,:,k_index,:];
-    lon = nomissing(ds["lon"][:])
-    lat = nomissing(ds["lat"][:])
+
+    lon = nomissing(coord(ds[varname],"longitude")[:])
+    lat = nomissing(coord(ds[varname],"latitude")[:])
+
+    #lon = nomissing(ds["lon"][:])
+    #lat = nomissing(ds["lat"][:])
     SS = nomissing(S,NaN);
     close(ds)
 
@@ -93,7 +96,7 @@ for (fname,varname) in data_TS
     @info "average"
     SS2 = mean(SS,dims = 3)[:,:,1]
 
-    saveinterp((lon,lat),SS2,(gridlon,gridlat),interp_fname)
+    saveinterp((lon,lat),SS2,(gridlon,gridlat),lvarname,interp_fname)
 end
 
 end

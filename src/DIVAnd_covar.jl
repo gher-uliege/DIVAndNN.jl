@@ -54,7 +54,7 @@ relu(x) = max(0.,x)
     fw[1:end-1]: neural network weight and biases
     fw[end]: background field (Nxy x 1)
 """
-function model_field(fieldp,fw, dropoutprob = 0.)
+function model_field(fieldp,fw, dropoutprob = 0., activation=relu)
     w = fw[1:end-1]
     fieldb = fw[end]
 
@@ -62,7 +62,7 @@ function model_field(fieldp,fw, dropoutprob = 0.)
         field_test = fieldp
 
         for i = 1:2:(length(w)-2)
-            field_test = relu.((field_test * w[i] .+ w[i+1]))
+            field_test = activation.((field_test * w[i] .+ w[i+1]))
             Knet.dropout(field_test, dropoutprob)
         end
         field_test = (field_test * w[end-1] .+ w[end])
@@ -119,12 +119,12 @@ function ∇background(iB,field_test,field_background)
 end
 
 
-function loss_obs(iB,fieldp,H,y,fw,costfun,epsilon2,dropoutprob,L2reg = 0)
+function loss_obs(iB,fieldp,H,y,fw,costfun,epsilon2,dropoutprob,activation,L2reg = 0)
     w = fw[1:end-1]
     fieldb = fw[end]
 
     #@show dropoutprob
-    field_test = model_field(fieldp,fw,dropoutprob)
+    field_test = model_field(fieldp,fw,dropoutprob,activation)
     ##@show size(fieldp),size(field_test)
     #@show extrema(field_test)
 
@@ -138,8 +138,9 @@ function loss_obs(iB,fieldp,H,y,fw,costfun,epsilon2,dropoutprob,L2reg = 0)
     return J
 end
 
-function loss(iB,fieldp,H,y,fw,costfun,epsilon2,field_background,dropoutprob = 0,L2reg = 0)
-    Jobs = loss_obs(iB,fieldp,H,y,fw,costfun,epsilon2,dropoutprob,L2reg)
+function loss(iB,fieldp,H,y,fw,costfun,epsilon2,field_background,
+              dropoutprob = 0,activation = relu,L2reg = 0)
+    Jobs = loss_obs(iB,fieldp,H,y,fw,costfun,epsilon2,dropoutprob,activation,L2reg)
     Jbackground = background(iB,fw[end][:,1],field_background)
 
     J = Jobs + Jbackground
@@ -150,11 +151,12 @@ end
 grad_loss_obs = Knet.grad(loss_obs,5)
 
 
-function grad_loss(iB,fieldp,H,y,fw,costfun,epsilon2,field_background,dropoutprob=0,L2reg = 0)
+function grad_loss(iB,fieldp,H,y,fw,costfun,epsilon2,field_background,
+                   dropoutprob=0,activation=relu,L2reg = 0)
     w = fw[1:end-1]
     fieldb = fw[end]
 
-    δfw = grad_loss_obs(iB,fieldp,H,y,fw,costfun,epsilon2,dropoutprob,L2reg)
+    δfw = grad_loss_obs(iB,fieldp,H,y,fw,costfun,epsilon2,dropoutprob,activation,L2reg)
 
     δfw[end] += ∇background(iB,fieldb[:,1],field_background)
     return δfw
@@ -237,6 +239,7 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
                       niter::Int = 10000,
                       costfun = nll,
                       dropoutprob = 0.,
+                      activation = relu,
                       L2reg = 0,
                       learning_rate = 0.01,
                       maxgrad = 5000.,
@@ -311,7 +314,7 @@ function analysisprob(mask,pmn,xyi,obspos,y,len,epsilon2,field,NLayers;
         iobssel = rand(Float64,size(y)) .<= trainfrac
 
         gradloss = grad_loss(iB,fieldp,H[iobssel,:],y[iobssel],fw0,costfun,
-                             epsilon2,field_background,dropoutprob,L2reg)
+                             epsilon2,field_background,dropoutprob,activation,L2reg)
 
         if ((i-1) % plotevery == 0) && (plotevery != -1)
             prob_estim = model_field(fieldp,fw0,0)
